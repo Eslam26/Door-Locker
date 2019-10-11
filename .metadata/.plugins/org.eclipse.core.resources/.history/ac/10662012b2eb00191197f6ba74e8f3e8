@@ -1,0 +1,127 @@
+/*******************************************************************************************************
+ *  [FILE NAME]   :      <timer0.c>                                                                    *
+ *  [AUTHOR]      :      <Eslam EL-Naggar>                                                             *
+ *  [DATE CREATED]:      <Oct 8, 2019>                                                                 *
+ *  [Description} :      <Source file for atmega16 Timer 1                                             *
+ ******************************************************************************************************/
+/*--------------------------------------INCLUDES--------------------------------------------------------*/
+#include "timer1.h" /*include Timer 1 header file */
+#define NULL_PTR ((void*)0)
+/*------------------------------------Global Variables--------------------------------------------------*/
+static volatile void (*g_callBackPtr)(void) = NULL_PTR;
+
+/*------------------------------------FUNCTIONS DEFINITIONS-------------------------------------------*/
+/* ISR for Normal overflow mode Interrupt */
+ISR(TIMER1_OVF_vect) {
+	if (g_callBackPtr != NULL_PTR) {
+		(*g_callBackPtr)();
+	}
+
+}
+/* ISR for Normal compare A mode Interrupt */
+ISR(TIMER1_COMPA_vect) {
+	if (g_callBackPtr != NULL_PTR) {
+		(*g_callBackPtr)();
+	}
+}
+/* ISR for Normal compare B mode Interrupt */
+ISR(TIMER1_COMPB_vect) {
+	if (g_callBackPtr != NULL_PTR) {
+		(*g_callBackPtr)();
+	}
+}
+
+/*----------------------------------------------------------------------------------------------------
+ [Function Name]:  Timer1_init
+ [Description]  :  This function is responsible for initializing Timer 1
+ [Args]
+ [in]           :  const Timer1_configType *Timer1_configType_Ptr
+ 	 	 	 	 	 	 this arg shall indictaes the address of the structure that contains
+ 	 	 	 	 	 	 the initial parameters to intialize the Timer 1 Driver
+ [Returns]      :  This function returns void
+ ----------------------------------------------------------------------------------------------------*/
+
+void Timer1_init(const Timer1_configType *Timer1_configType_Ptr) {
+	SREG = (1<<7);
+	TCCR1A = (1 << FOC1A) | (1 << FOC1B);
+	TCCR1A = (TCCR1A & 0b11111100)
+			| ((Timer1_configType_Ptr->mode & 0b00000011) << (WGM10));
+	TCCR1B = (TCCR1B & 0b11100111)
+			| (((Timer1_configType_Ptr->mode & 0b00001100) >> 2) << (WGM12));
+	TCCR1B = (TCCR1B & 0b11111000)
+			| ((Timer1_configType_Ptr->clock & 0b00000111) << (CS10));
+	ICR1 = Timer1_configType_Ptr->valueICR1;
+}
+
+/*----------------------------------------------------------------------------------------------------
+ [Function Name]:  Timer1_normalMode
+ [Description]  :  This function is responsible for starts normal OVF mode of Timer 1
+ [Args]
+ [in]           :  uint16 initialValueTimer
+ 	 	 	 	 	 	 this arg shall indictaes the value of TCNT1 Driver
+ [Returns]      :  This function returns void
+ ----------------------------------------------------------------------------------------------------*/
+void Timer1_normalMode(uint16 initialValueTimer) {
+	TIMSK = (1<<TOIE1); /* enable normal OVF Interrupt */
+	TCNT1 = initialValueTimer;
+}
+
+/*----------------------------------------------------------------------------------------------------
+ [Function Name]:  Timer1_compareMode_OCR1A
+ [Description]  :  This function is responsible for starts compare A match output mode of Timer 1
+ [Args]
+ [in]           :  const Timer1_compare_1A *Timer1_OCR1A_compare_Ptr
+ 	 	 	 	 	 	 this arg shall contains the address of the structures that contains
+ 	 	 	 	 	 	 the intial parameters to set up compare A match output mode
+ [Returns]      :  This function returns void
+ ----------------------------------------------------------------------------------------------------*/
+void Timer1_compareMode_OCR1A(const Timer1_compare_1A *Timer1_OCR1A_compare_Ptr) {
+	TIMSK = (1<<OCIE1A);  /* enable compare A Interrupt */
+	TCCR1A = (TCCR1A & 0b00111111) | ((Timer1_OCR1A_compare_Ptr->compareMode_OC1A & 0b00000011)<< (COM1A0));
+	TCNT1 = Timer1_OCR1A_compare_Ptr->initialValueTimer;
+	OCR1A = Timer1_OCR1A_compare_Ptr->valueOCR1A;
+
+}
+
+/*----------------------------------------------------------------------------------------------------
+ [Function Name]:  Timer1_compareMode_OCR1B
+ [Description]  :  This function is responsible for starts compare B match output mode of Timer 1
+ [Args]
+ [in]           :  const Timer1_compare_1B *Timer1_OCR1B_compare_Ptr
+ 	 	 	 	 	 	 this arg shall contains the address of the structures that contains
+ 	 	 	 	 	 	 the intial parameters to set up compare B match output mode
+ [Returns]      :  This function returns void
+ ----------------------------------------------------------------------------------------------------*/
+void Timer1_compareMode_OCR1B(const Timer1_compare_1B *Timer1_OCR1B_compare_Ptr) {
+	TIMSK = (1<<OCIE1B); /* enable compare A Interrupt */
+	TCCR1A = (TCCR1A & 0b11001111) | ((Timer1_OCR1B_compare_Ptr->compareMode_OC1B & 0b00000011)<< (COM1B0));
+	TCNT1 = Timer1_OCR1B_compare_Ptr->initialValueTimer;
+	OCR1B = Timer1_OCR1B_compare_Ptr->valueOCR1B;
+}
+
+/*----------------------------------------------------------------------------------------------------
+ [Function Name]:  changeTimerClock
+ [Description]  :  This function is responsible for change clock Prescaler during runtime
+ [Args]
+ [in]           :  const Timer1_configType *Timer1_configType_Ptr
+ 	 	 	 	 	 	 this arg shall contains the address of the structure that one of its members
+ 	 	 	 	 	 	 contains the value of the prescaler
+ [Returns]      :  This function returns void
+ ----------------------------------------------------------------------------------------------------*/
+void changeTimerClock(const Timer1_configType *Timer1_configType_Ptr){
+	TCCR1B = (TCCR1B & 0b11111000)
+				| ((Timer1_configType_Ptr->clock & 0b00000111) << (CS10));
+}
+
+/*----------------------------------------------------------------------------------------------------
+ [Function Name]:  Timer1_normalMode
+ [Description]  :  This function is responsible for starts normal OVF mode of Timer 1
+ [Args]
+ [in]           :  uint16 initialValueTimer
+ 	 	 	 	 	 	 this arg shall indictaes the value of TCNT1 Driver
+ [Returns]      :  This function returns void
+ ----------------------------------------------------------------------------------------------------*/
+void Timer1_setCallBack(void (*setCallBack_Ptr)(void)) {
+	g_callBackPtr = setCallBack_Ptr;
+}
+

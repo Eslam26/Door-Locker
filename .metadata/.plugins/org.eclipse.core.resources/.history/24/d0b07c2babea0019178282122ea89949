@@ -1,0 +1,25 @@
+/*
+ * timer1.c
+ *
+ *  Created on: Oct 9, 2019
+ *      Author: eslamelnaggar
+ */
+/*--------------------------------------INCLUDES--------------------------------------------------------*/
+#include "timer1.h"
+#define NULL_PTR ((void*)0)
+/*------------------------------------Global Variables--------------------------------------------------*/
+static volatile void (*g_callBackPtr)(void) = NULL_PTR;
+
+/*------------------------------------FUNCTIONS DEFINITIONS-------------------------------------------*/
+
+void Timer1_init(const Timer1_configType * Timer1_configType_Ptr){
+
+
+	TCCR1A = (1<<FOC1A) | (1<<FOC1B);
+	TCCR1A = (TCCR1A & 0b11111100) | ((Timer1_configType_Ptr->mode  & 0b00000011)<<(WGM10));
+	TCCR1B = (TCCR1B & 0b11100111) | (((Timer1_configType_Ptr->mode & 0b00001100)>>2)<<(WGM12));
+	TCCR1B = (TCCR1B & 0b11111000) | ((Timer1_configType_Ptr->clock & 0b00000111)<<(CS10));
+
+
+
+}

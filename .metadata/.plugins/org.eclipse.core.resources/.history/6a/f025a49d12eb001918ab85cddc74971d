@@ -1,0 +1,286 @@
+/*
+ * main.c
+ *
+ *  Created on: Oct 4, 2019
+ *      Author: eslamelnaggar
+ */
+
+/*------------------------------------------------------INCLUDES-------------------------------------------------------------------------*/
+#include "micro_config.h"
+#include "uart.h"
+#include "timer0.h"
+#include "keypad.h"
+#include "lcd.h"
+
+/*---------------------------------------------------DEFINITIONS--------------------------------------------------------------------------*/
+#define CONTROL_ECU_READY 0x11
+#define PASSWORD_COMMAND  0x01
+#define PASSWORD_CONFIRMATION_COMMAND 0x02
+#define PASSWORD_MATCH_CONFIRMATION_COMMAND 0x03
+#define PASSWORD_MATCH_NOT_CONFIRMATION_COMMAND 0x04
+#define PASSWORD_SCREEN_COMMAND 0x05
+#define REQUEST_SCREEN_COMMAND 0x06
+#define OPEN_DOOR_COMMAND 0x07
+#define DOOR_IS_OPENNING_COMMAND 0x08
+#define DOOR_IS_LOCKING_COMMAND 0x09
+#define COMPLETE_TASK_COMMAND 0x0A
+#define ALARM_COMMAND 0x0B
+#define GET_PASSWORD_DONE 0x0C
+#define NULL_PTR ((void*)0)
+#define PROJECT_NAME "Door Locker"
+#define WELCOME_MESSAGE "WELCOME"
+#define PASSWORD_REQUEST_MESSAGE "Please enter your password : "
+#define PASSWORD_REQUEST_CONFIRMATION_MESSAGE "Please renter your password : "
+#define PASSWORD_NOT_MATCHED_ERROR_MESSAGE "Not Matched ... "
+#define FIRST_REQUEST_MESSAGE "(+) : open the door "
+#define SECOND_REQUEST_MESSAGE "(-) : change the password"
+#define INCORRET_INPUT_MESSAGE "INCORRECT INPUT"
+#define INCORRET_PASSWORD_MESSAGE "INCORRECT PASSWORD"
+#define DOOR_IS_UNLOCKING_MESSAGE "Door is unlocking ..."
+#define DOOR_IS_LOCKING_MESSAGE "Door is locking ..."
+#define THIEF_MESSAGE "Thief !!!"
+#define MILLI_SEC_400 400
+#define MILLI_SEC_2000 2000
+#define ZERO 0
+#define ROW_0 0
+#define ROW_1 1
+#define COL_0 0
+#define COL_3 3
+#define COL_12 12
+#define COL_13 13
+#define getIntroScreen_FUN_INDEX 0
+#define getPasswordCreationScreen_FUN_INDEX 1
+#define getPasswordScreen_FUN_INDEX 2
+#define getRequestScreen_FUN_INDEX 3
+#define getOpenDoorCloseDoorScreen_FUN_INDEX 4
+#define getBuzzerScreen_FUN_INDEX 5
+
+/*------------------------------------------------FUNCTIONS DECLARATIONS------------------------------------------------------------------*/
+void getIntroScreen(void);
+void getPasswordCreationScreen(void);
+void getPasswordScreen(void);
+void getRequestScreen(void);
+void getOpenDoorCloseDoorScreen(void);
+void getBuzzerScreen(void);
+void sendData(uint8 data);
+
+/*-------------------------------------------------GLOBAL VARIABLES-----------------------------------------------------------------------*/
+uint8 volatile g_stepSelector = 0;
+uint8 volatile g_switchRequest = 0;
+uint8 volatile g_flag = 0;
+void (*fun_ptr_arr[])(
+		void) = {getIntroScreen, getPasswordCreationScreen,
+			getPasswordScreen, getRequestScreen, getOpenDoorCloseDoorScreen, getBuzzerScreen
+};
+
+/*--------------------------------------------------STRUCTURES----------------------------------------------------------------------------*/
+
+int main() {
+
+	uint8 startFlag = 1;
+	Uart_configType UART_config = { Asynchronus, Disabled, _2bit, _8bit,
+			Rising_Transmitted_Falling_Recieved, OFF, multi_OFF, 9600 };
+
+	UART_init(&UART_config);
+	KeyPad_init();
+	LCD_init();
+	LCD_clearScreen();
+
+	UART_sendByte(CONTROL_ECU_READY);
+	while (UART_recieveByte() != CONTROL_ECU_READY)
+		;
+	UART_sendByte(CONTROL_ECU_READY);
+
+	while (1)
+
+	{
+		if (startFlag) {
+			(*fun_ptr_arr[g_stepSelector])();
+			startFlag = 0;
+		}
+
+		(*fun_ptr_arr[g_stepSelector])();
+
+	}
+
+	return 0;
+
+}
+
+void getIntroScreen(void) {
+	LCD_clearScreen();
+	LCD_goToRowColumn(ROW_0, COL_12);
+	LCD_displayString(PROJECT_NAME);
+	LCD_goToRowColumn(ROW_1, COL_13);
+	LCD_displayString(WELCOME_MESSAGE);
+	_delay_ms(MILLI_SEC_2000);
+	g_stepSelector = getPasswordCreationScreen_FUN_INDEX;
+}
+
+void getPasswordCreationScreen(void) {
+	uint8 key, flag = 1, command;
+	sendData(PASSWORD_COMMAND);
+	LCD_clearScreen();
+	LCD_displayString(PASSWORD_REQUEST_MESSAGE);
+	LCD_goToRowColumn(ROW_1, COL_3);
+
+	do {
+		key = keyPad_getPressedKey();
+		UART_sendByte(key);
+		if (key != '=')
+			LCD_displayCharacter('*');
+		_delay_ms(MILLI_SEC_400);
+	} while (key != '=');
+	UART_sendByte(COMPLETE_TASK_COMMAND);
+
+	sendData(PASSWORD_CONFIRMATION_COMMAND);
+	LCD_clearScreen();
+	LCD_displayString(PASSWORD_REQUEST_CONFIRMATION_MESSAGE);
+	LCD_goToRowColumn(ROW_1, COL_3);
+	do {
+		key = keyPad_getPressedKey();
+		UART_sendByte(key);
+		if (key != '=')
+			LCD_displayCharacter('*');
+		_delay_ms(MILLI_SEC_400);
+	} while (key != '=');
+	UART_sendByte(COMPLETE_TASK_COMMAND);
+
+	while (flag) {
+		command = UART_recieveByte();
+		if (command == PASSWORD_MATCH_CONFIRMATION_COMMAND) {
+			g_stepSelector = getRequestScreen_FUN_INDEX;
+			flag = ZERO;
+
+		} else if (command == PASSWORD_MATCH_NOT_CONFIRMATION_COMMAND) {
+			g_stepSelector = getPasswordCreationScreen_FUN_INDEX;
+			LCD_clearScreen();
+			LCD_displayString(PASSWORD_NOT_MATCHED_ERROR_MESSAGE);
+			_delay_ms(MILLI_SEC_400);
+			flag = ZERO;
+		}
+	}
+
+}
+
+void getPasswordScreen(void) {
+	uint8 key = ZERO;
+	uint8 flag = 1;
+	uint8 command = ZERO;
+	sendData(PASSWORD_SCREEN_COMMAND);
+	LCD_clearScreen();
+	LCD_displayString(PASSWORD_REQUEST_MESSAGE);
+	LCD_goToRowColumn(ROW_1, COL_3);
+	while (UART_recieveByte() != GET_PASSWORD_DONE)
+		;
+	UART_sendByte(CONTROL_ECU_READY);
+	do {
+		key = keyPad_getPressedKey();
+		UART_sendByte(key);
+		if (key != '=')
+			LCD_displayCharacter('*');
+		_delay_ms(MILLI_SEC_400);
+	} while (key != '=');
+
+	UART_sendByte(COMPLETE_TASK_COMMAND);
+
+	while (flag) {
+		command = UART_recieveByte();
+		switch (command) {
+		case PASSWORD_MATCH_CONFIRMATION_COMMAND:
+
+			if (g_switchRequest) {
+				g_stepSelector = getOpenDoorCloseDoorScreen_FUN_INDEX;
+			} else {
+				g_stepSelector = getPasswordCreationScreen_FUN_INDEX;
+			}
+
+			flag = ZERO;
+			break;
+		case PASSWORD_MATCH_NOT_CONFIRMATION_COMMAND:
+			g_stepSelector = getPasswordScreen_FUN_INDEX;
+			LCD_clearScreen();
+			LCD_displayString(INCORRET_PASSWORD_MESSAGE);
+			_delay_ms(MILLI_SEC_400);
+			flag = ZERO;
+			break;
+		case ALARM_COMMAND:
+			g_stepSelector = getBuzzerScreen_FUN_INDEX;
+			flag = ZERO;
+			break;
+		default:
+			break;
+		}
+
+	}
+}
+
+void getRequestScreen(void) {
+	uint8 key;
+	LCD_clearScreen();
+	sendData(REQUEST_SCREEN_COMMAND);
+	LCD_displayString(FIRST_REQUEST_MESSAGE);
+	LCD_goToRowColumn(ROW_1, COL_0);
+	LCD_displayString(SECOND_REQUEST_MESSAGE);
+	key = keyPad_getPressedKey();
+	if (key == '+') {
+		g_stepSelector = getPasswordScreen_FUN_INDEX;
+		g_switchRequest = 1;
+	} else if (key == '-') {
+		g_stepSelector = getPasswordScreen_FUN_INDEX;
+		g_switchRequest = 0;
+	} else {
+		LCD_clearScreen();
+		g_stepSelector = getRequestScreen_FUN_INDEX;
+
+	}
+}
+
+void getOpenDoorCloseDoorScreen(void) {
+	LCD_clearScreen();
+	sendData(OPEN_DOOR_COMMAND);
+	while (UART_recieveByte() != DOOR_IS_OPENNING_COMMAND)
+		;
+	LCD_displayString(DOOR_IS_UNLOCKING_MESSAGE);
+	while (UART_recieveByte() != DOOR_IS_LOCKING_COMMAND)
+	{
+		LCD_goToRowColumn(ROW_1, COL_0);
+		LCD_intgerToString(UART_recieveByte());
+		LCD_goToRowColumn(ROW_1, 4);
+		LCD_displayString("second(s) left");
+
+	}
+	UART_sendByte(CONTROL_ECU_READY);
+	while (UART_recieveByte() != CONTROL_ECU_READY);
+	LCD_clearScreen();
+	LCD_displayString(DOOR_IS_LOCKING_MESSAGE);
+	while (UART_recieveByte() != COMPLETE_TASK_COMMAND)
+	{
+		/*
+		LCD_goToRowColumn(ROW_1, COL_0);
+		LCD_intgerToString(UART_recieveByte());
+		LCD_goToRowColumn(ROW_1, 4);
+		LCD_displayString("second(s) left");
+		*/
+	}
+	//UART_sendByte(CONTROL_ECU_READY);
+	g_stepSelector = getRequestScreen_FUN_INDEX;
+}
+
+void getBuzzerScreen(void) {
+	LCD_clearScreen();
+	LCD_displayString(THIEF_MESSAGE);
+	while (UART_recieveByte() != COMPLETE_TASK_COMMAND)
+		;
+	g_stepSelector = getIntroScreen_FUN_INDEX;
+}
+
+void sendData(uint8 data) {
+	UART_sendByte(CONTROL_ECU_READY);
+	while (UART_recieveByte() != CONTROL_ECU_READY)
+		;
+	UART_sendByte(data);
+	while (UART_recieveByte() != CONTROL_ECU_READY)
+		;
+}
+

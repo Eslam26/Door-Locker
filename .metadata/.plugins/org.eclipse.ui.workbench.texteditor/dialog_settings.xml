@@ -1,0 +1,47 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<section name="Workbench">
+	<section name="org.eclipse.ui.texteditor.FindReplaceDialog">
+		<item key="wrap" value="true"/>
+		<item key="casesensitive" value="false"/>
+		<item key="wholeword" value="false"/>
+		<item key="incremental" value="false"/>
+		<item key="isRegEx" value="false"/>
+		<item key="selection" value="recieveData"/>
+		<list key="findhistory">
+			<item value="recieveData"/>
+			<item value="while (UART_recieveByte() != ECU_READY)"/>
+			<item value="while (UART_recieveByte() != ECU_READY);"/>
+			<item value="UART_sendByte(ECU_READY);"/>
+			<item value="sendData"/>
+			<item value="UART_recieveByte() != COMPLETE_TASK_COMMAND"/>
+			<item value="g_data"/>
+			<item value="g_stepSelector"/>
+			<item value="he address of the function that will be "/>
+			<item value="CONTROL_ECU_READY"/>
+			<item value="g_switchRequest"/>
+			<item value="0"/>
+			<item value="500"/>
+			<item value="5"/>
+			<item value="4"/>
+		</list>
+		<list key="replacehistory">
+			<item value=""/>
+			<item value="ECU_READY"/>
+			<item value="getIntroScreen_FUN_INDEX"/>
+			<item value="getBuzzerScreen_FUN_INDEX"/>
+			<item value="getOpenDoorCloseDoorScreen_FUN_INDEX"/>
+			<item value="getRequestScreen_FUN_INDEX"/>
+			<item value="getPasswordScreen_FUN_INDEX"/>
+			<item value="getPasswordCreationScreen_FUN_INDEX"/>
+			<item value="Timer0_compare_Ptr"/>
+			<item value="Timer0_configType_Ptr"/>
+		</list>
+	</section>
+	<section name="org.eclipse.ui.texteditor.FindReplaceDialog_dialogBounds">
+		<item key="DIALOG_X_ORIGIN" value="1066"/>
+		<item key="DIALOG_Y_ORIGIN" value="387"/>
+		<item key="DIALOG_WIDTH" value="336"/>
+		<item key="DIALOG_HEIGHT" value="454"/>
+		<item key="DIALOG_FONT_NAME" value="1|Segoe UI|9.0|0|WINDOWS|1|-15|0|0|0|400|0|0|0|1|0|0|0|0|Segoe UI"/>
+	</section>
+</section>

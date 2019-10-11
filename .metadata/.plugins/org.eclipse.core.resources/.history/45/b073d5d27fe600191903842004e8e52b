@@ -1,0 +1,20 @@
+/*
+ * keypad.h
+ *
+ *  Created on: Oct 4, 2019
+ *      Author: eslamelnaggar
+ */
+
+#ifndef KEYPAD_H_
+#define KEYPAD_H_
+
+/*---------------------------------------Includes---------------------------------------*/
+
+
+/*---------------------Definitions and configurations----------------------------------*/
+#define N_COL 4
+#define N_ROW 4
+
+/*------------------FUNCTION DECLARATIONS----------------------------------------------*/
+
+#endif /* KEYPAD_H_ */

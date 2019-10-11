@@ -1,0 +1,20 @@
+/*
+ * timer1.c
+ *
+ *  Created on: Oct 9, 2019
+ *      Author: eslamelnaggar
+ */
+/*--------------------------------------INCLUDES--------------------------------------------------------*/
+#include "timer0.h"
+#define NULL_PTR ((void*)0)
+/*------------------------------------Global Variables--------------------------------------------------*/
+static volatile void (*g_callBackPtr)(void) = NULL_PTR;
+
+/*------------------------------------FUNCTIONS DEFINITIONS-------------------------------------------*/
+
+void Timer1_init(const Timer1_configType * Timer1_configType_Ptr){
+
+	TCCR1A = (TCCR1A & 0b00111111) | (Timer1_configType_)
+
+
+}

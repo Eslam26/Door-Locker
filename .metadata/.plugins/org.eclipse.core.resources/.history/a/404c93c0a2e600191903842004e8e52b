@@ -1,0 +1,62 @@
+/*
+/******************************************************************************************************
+ *  [FILE NAME]   :      <keypad.c>                                                                    *
+ *  [AUTHOR]      :      <Eslam EL-Naggar>                                                             *
+ *  [DATE CREATED]:      <Oct 4, 2019>                                                                 *
+ *  [Description} :      <This file contains the definitions of the functions that using for keypad>   *
+ ******************************************************************************************************/
+
+
+#ifndef UART_H_
+#define UART_H_
+
+/*--------------------------------------INCLUDES-----------------------------------------------------*/
+#include <avr/io.h>
+#include "common_macros.h"
+#include "std_types.h"
+
+/*-----------------------------------DEFINITIONS and Configurations--------------------------------------*/
+
+
+/*-----------------------------------------ENUMS---------------------------------------------------------*/
+typedef enum{
+	Interrupt, Pulling
+}Uart_method;
+
+typedef enum{
+	Asynchronus, Synchronous
+}Uart_mode;
+
+typedef enum{
+	Disabled, Reserved, evenParity, oddParity
+}Uart_parity;
+
+typedef enum{
+	_5bit, _6bit, _7bit, _8bit, Reserved, Reserved, Reserved, _9bit
+}Uart_characterSize;
+
+typedef enum{
+	_1bit, _2bit
+}Uart_stopBit;
+
+/*--------------------------------------Structures and Unions------------------------------------------*/
+typedef struct{
+
+   Uart_mode mode;
+   Uart_method method;
+   Uart_parity parity;
+   Uart_characterSize size;
+   Uart_stopBit stop;
+
+}Uart_configType;
+
+/*---------------------------------------FUNCTION DECLARATIONS----------------------------------------*/
+
+void UART_init(const Uart_configType * );
+void UART_sendByte(const uint8 data);
+uint8 UART_recieveByte(void);
+void UART_sendString(const uint8 * str );
+void UART_recieveString(uint8 * Str);
+
+
+#endif /* UART_H_ */

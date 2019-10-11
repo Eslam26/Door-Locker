@@ -1,0 +1,14 @@
+/*******************************************************************************************************
+ *  [FILE NAME]   :      <timer0.c>                                                                    *
+ *  [AUTHOR]      :      <Eslam EL-Naggar>                                                             *
+ *  [DATE CREATED]:      <Oct 4, 2019>                                                                 *
+ *  [Description} :      <This file contains Functions Declarations and defines statements             *
+ ******************************************************************************************************/
+
+
+
+void Timer0_init(const Timer0_configType * configType_Ptr)
+{
+	TCCR0 = (1<<FOC0) ;
+
+}

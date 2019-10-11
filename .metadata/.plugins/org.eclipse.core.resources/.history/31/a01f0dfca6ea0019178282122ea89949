@@ -1,0 +1,52 @@
+/*
+ * timer1.h
+ *
+ *  Created on: Oct 9, 2019
+ *      Author: eslamelnaggar
+ */
+
+#ifndef TIMER1_H_
+#define TIMER1_H_
+/*--------------------------------------INCLUDES--------------------------------------------------------*/
+#include <avr/io.h>
+#include "common_macros.h"
+#include "std_types.h"
+
+/*-----------------------------------DEFINITIONS and Configurations--------------------------------------*/
+
+
+
+
+/*-----------------------------------------ENUMS---------------------------------------------------------*/
+typedef enum{
+	Normal, CTC=2
+}Timer1_mode;
+
+typedef enum{
+	normalPortOperation, toggle_OC0, clear_OC0, set_OC0
+}Timer1_compareMatchOutputMode;
+
+typedef enum{
+	NO_CLOCK,F_CPU_CLOCK,F_CPU_8,F_CPU_64,F_CPU_256,F_CPU_1024, External_clock_falling, External_clock_rising
+}Timer1_clock;
+/*--------------------------------------Structures and Unions------------------------------------------*/
+
+typedef struct {
+	Timer1_mode mode;
+	Timer1_clock clock;
+}Timer1_configType;
+
+typedef struct {
+	uint8 initialValueTimer;
+	Timer1_compareMatchOutputMode compareMode;
+	uint8 compareValue;
+}Timer1_compare;
+
+/*---------------------------------------FUNCTION DECLARATIONS------------------------------------------*/
+
+void Timer1_init(const Timer1_configType * Timer1_configType_Ptr);
+
+
+
+
+#endif /* TIMER1_H_ */

@@ -1,0 +1,12 @@
+/*******************************************************************************************************
+ *  [FILE NAME]   :      <external_interrupts.h>                                                       *
+ *  [AUTHOR]      :      <Eslam EL-Naggar>                                                             *
+ *  [DATE CREATED]:      <Oct 4, 2019>                                                                 *
+ *  [Description} :      <header file for atmega16 external interrupts>                                *
+ ******************************************************************************************************/
+#ifndef EXTERNAL_INTERRUPTS_H_
+#define EXTERNAL_INTERRUPTS_H_
+
+
+
+#endif /* EXTERNAL_INTERRUPTS_H_ */

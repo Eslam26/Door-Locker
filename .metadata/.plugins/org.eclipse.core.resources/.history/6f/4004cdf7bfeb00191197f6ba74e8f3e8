@@ -1,0 +1,87 @@
+/*******************************************************************************************************
+ *  [FILE NAME]   :      <timer0.c>                                                                    *
+ *  [AUTHOR]      :      <Eslam EL-Naggar>                                                             *
+ *  [DATE CREATED]:      <Oct 4, 2019>                                                                 *
+ *  [Description} :      <This file contains Functions Declarations and defines statements             *
+ ******************************************************************************************************/
+
+/*--------------------------------------INCLUDES--------------------------------------------------------*/
+#include "timer0.h"
+#define NULL_PTR ((void*)0)
+/*------------------------------------Global Variables--------------------------------------------------*/
+static volatile void (*g_callBackPtr)(void) = NULL_PTR;
+
+/*------------------------------------FUNCTIONS DEFINITIONS-------------------------------------------*/
+/*----------------------------------------------------------------------------------------------------
+ [Function Name]:  Timer0_init
+ [Description]  :  This function is responsible for initializing UART
+ [Returns]      :  This function returns void
+ ----------------------------------------------------------------------------------------------------*/
+
+
+void Timer0_init(const Timer0_configType * Timer0_configType_Ptr)
+{
+	TCCR0 = (1<<FOC0);
+	TCCR0 = (TCCR0 & 0b10111111) | ((Timer0_configType_Ptr->mode & 0b00000001)<<WGM00);
+	TCCR0 = (TCCR0 & 0b11110111) | (((Timer0_configType_Ptr->mode & 0b00000010)>>1)<<WGM01);
+    TCCR0 = (TCCR0 & 0b11111000) | ((Timer0_configType_Ptr->clock & 0b00000111));
+}
+
+/*----------------------------------------------------------------------------------------------------
+ [Function Name]:  Timer0_init
+ [Description]  :  This function is responsible for initializing UART
+ [Returns]      :  This function returns void
+ ----------------------------------------------------------------------------------------------------*/
+void Timer0_compareMode(const Timer0_compare * Timer0_compare_Ptr)
+{
+	SREG = (1<<7);
+    TCNT0 = Timer0_compare_Ptr->initialValueTimer;
+	TCCR0 = (TCCR0 & 0b11001111) | (( Timer0_compare_Ptr->compareMode & 0b00000011)<<COM00);
+	TIMSK = (TIMSK & 0b11111100) | (1<<OCIE0);
+	OCR0 = Timer0_compare_Ptr->compareValue;
+}
+
+/*----------------------------------------------------------------------------------------------------
+ [Function Name]:  Timer0_init
+ [Description]  :  This function is responsible for initializing UART
+ [Returns]      :  This function returns void
+ ----------------------------------------------------------------------------------------------------*/
+void Timer0_NormalMode(uint8 initialValue)
+{
+	SREG = (1<<7);
+	TCNT0 = initialValue;
+	TIMSK = (TIMSK & 0b11111100) | (1<<TOIE0);
+}
+
+/*----------------------------------------------------------------------------------------------------
+ [Function Name]:  Timer0_init
+ [Description]  :  This function is responsible for initializing UART
+ [Returns]      :  This function returns void
+ ----------------------------------------------------------------------------------------------------*/
+void Timer0_PWM(uint16 set_duty_cycle)
+{
+    TCNT0 = 0;
+	OCR0  = set_duty_cycle;
+}
+
+/*----------------------------------------------------------------------------------------------------
+ [Function Name]:  Timer0_init
+ [Description]  :  This function is responsible for initializing UART
+ [Returns]      :  This function returns void
+ ----------------------------------------------------------------------------------------------------*/
+void Timer0_PWM_init(void)
+{
+	TCNT0 = 0;
+	DDRB  = DDRB | (1<<PB3);
+	TCCR0 = (1<<WGM00) | (1<<WGM01) | (1<<COM01) | (1<<CS01);
+}
+
+/*----------------------------------------------------------------------------------------------------
+ [Function Name]:  Timer0_init
+ [Description]  :  This function is responsible for initializing UART
+ [Returns]      :  This function returns void
+ ----------------------------------------------------------------------------------------------------*/
+void Timer0_setCallBack(void(*setCallBack_ptr)(void))
+{
+	g_callBackPtr = setCallBack_ptr;
+}

@@ -1,0 +1,13 @@
+/*
+ * external_interrupts.h
+ *
+ *  Created on: Oct 11, 2019
+ *      Author: eslamelnaggar
+ */
+
+#ifndef EXTERNAL_INTERRUPTS_H_
+#define EXTERNAL_INTERRUPTS_H_
+
+
+
+#endif /* EXTERNAL_INTERRUPTS_H_ */

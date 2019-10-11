@@ -1,0 +1,20 @@
+/*
+/******************************************************************************************************
+ *  [FILE NAME]   :      <keypad.c>                                                                    *
+ *  [AUTHOR]      :      <Eslam EL-Naggar>                                                             *
+ *  [DATE CREATED]:      <Oct 4, 2019>                                                                 *
+ *  [Description} :      <This file contains the definitions of the functions that using for keypad>   *
+ ******************************************************************************************************/
+
+
+#ifndef UART_H_
+#define UART_H_
+typedef enum{
+	Interrupt, Pulling
+}Uart_type;
+typedef struct{
+   Uart_type method;
+}Uart_configType;
+
+
+#endif /* UART_H_ */

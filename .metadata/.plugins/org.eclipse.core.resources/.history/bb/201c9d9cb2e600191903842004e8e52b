@@ -1,0 +1,72 @@
+/*
+/******************************************************************************************************
+ *  [FILE NAME]   :      <keypad.c>                                                                    *
+ *  [AUTHOR]      :      <Eslam EL-Naggar>                                                             *
+ *  [DATE CREATED]:      <Oct 4, 2019>                                                                 *
+ *  [Description} :      <This file contains the definitions of the functions that using for keypad>   *
+ ******************************************************************************************************/
+
+
+#ifndef UART_H_
+#define UART_H_
+
+/*--------------------------------------INCLUDES-----------------------------------------------------*/
+#include <avr/io.h>
+#include "common_macros.h"
+#include "std_types.h"
+
+/*-----------------------------------DEFINITIONS and Configurations--------------------------------------*/
+
+
+/*-----------------------------------------ENUMS---------------------------------------------------------*/
+typedef enum{
+	OFF, ON
+}Uart_interrupt;
+
+typedef enum{
+	Asynchronus, Synchronous
+}Uart_mode;
+
+typedef enum{
+	Disabled, Reserved, evenParity, oddParity
+}Uart_parity;
+
+typedef enum{
+	_5bit, _6bit, _7bit, _8bit, _9bit=7
+}Uart_characterSize;
+
+typedef enum{
+	_1bit, _2bit
+}Uart_stopBit;
+
+typedef enum{
+	Rising_Transmitted_Falling_Recieved, Falling_Transmitted_Rising_Recieved
+}Uart_clockPolarity;
+
+typedef enum{
+	OFF, ON
+}Uart_multiProcessorCommunicationMode;
+
+
+/*--------------------------------------Structures and Unions------------------------------------------*/
+typedef struct{
+
+   Uart_mode mode;
+   Uart_parity parity;
+   Uart_stopBit stop;
+   Uart_characterSize size;
+   Uart_clockPolarity clock;
+   Uart_interrupt interrupt;
+   Uart_multiProcessorCommunicationMode multiMode;
+}Uart_configType;
+
+/*---------------------------------------FUNCTION DECLARATIONS----------------------------------------*/
+
+void UART_init(const Uart_configType * );
+void UART_sendByte(const uint8 data);
+uint8 UART_recieveByte(void);
+void UART_sendString(const uint8 * string );
+void UART_recieveString(uint8 * string);
+
+
+#endif /* UART_H_ */

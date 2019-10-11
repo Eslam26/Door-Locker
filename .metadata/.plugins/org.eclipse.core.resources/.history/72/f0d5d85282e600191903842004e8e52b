@@ -1,0 +1,62 @@
+/******************************************************************************************************
+ *  [FILE NAME]   :      <keypad.c>                                                                    *
+ *  [AUTHOR]      :      <Eslam EL-Naggar>                                                             *
+ *  [DATE CREATED]:      <Oct 4, 2019>                                                                 *
+ *  [Description} :      <This file contains the definitions of the functions that using for keypad>   *
+ ******************************************************************************************************/
+
+/*----------------------------------------- -INCLUDES------------------------------------------------*/
+#include "keypad.h"
+
+/*------------------------------------FUNCTIONS DEFINITIONS------------------------------------------*/
+
+/*----------------------------------------------------------------------------------------------------
+ [Function Name]:  KeyPad_getPressedKey
+ [Description]  :  This functions is responsible for getting which the key is pressed
+ [Returns]      :  This return shall indicate the value of the key which is pressed
+ ----------------------------------------------------------------------------------------------------*/
+
+uint8 keyPad_getPressedKey(void) {
+	uint8 col, row; /*variable for storing the value of the current coloumn and row during looping over them*/
+	while (1) {
+		/* starting looping over them */
+		for (col = 0; col < N_COL; col++) {
+			/* each loop one coloumn only will be an output pin
+			 * and the rest will be input pins including the row pins
+			 */
+			KEYPAD_PORT_DIRECTION = (0b00010000 << col);
+
+			/*clear the output coloumn and enabling the internal pull resistors for row pins*/
+			KEYPAD_PORT_OUT = (~(0b00010000 << col));
+
+			for (row = 0; row < N_ROW; row++) /*looping over the rows pins*/
+			{
+				if (BIT_IS_CLEAR(KEYPAD_PORT_IN, row))
+				{
+						#if N_COL 3
+							return KeyPad_4x3_adjustKeyNumber((row*N_COL)+col+1);
+						#elif N_COL 4
+							return KeyPad_4x4_adjustKeyNumber((row*N_COL)+col+1);
+						#endif
+				}
+			}
+		}
+	}
+
+}
+
+
+/*----------------------------------------------------------------------------------------------------
+ [Function Name]:  KeyPad_4x3_adjustKeyNumber
+ [Description]  :  This functions is responsible for adjusting the key Number for Keypad 4x3
+ [Args]
+ [in]              uint8 a_button_n
+ 	 	 	 	 	 	this arg shall indicate the number of the button which is pressed
+ [Returns]      :  This return shall indicate the value of the key which is pressed
+ ----------------------------------------------------------------------------------------------------*/
+
+
+uint8 KeyPad_4x3_adjustKeyNumber(uint8 a_button_number)
+{
+
+}

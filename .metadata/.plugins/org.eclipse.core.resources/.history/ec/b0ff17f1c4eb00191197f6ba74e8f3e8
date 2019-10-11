@@ -1,0 +1,51 @@
+/*******************************************************************************************************
+ *  [FILE NAME]   :      <external_interrupts.c>                                                       *
+ *  [AUTHOR]      :      <Eslam EL-Naggar>                                                             *
+ *  [DATE CREATED]:      <Oct 4, 2019>                                                                 *
+ *  [Description} :      <source file for atmega16 external interrupts>                                *
+ ******************************************************************************************************/
+
+/*-----------------------------------------INCLUDES---------------------------------------------------*/
+
+#include "external_interrupts.h"
+
+/*--------------------------------------DEFINITIONS---------------------------------------------------*/
+#define NULL_PTR ((void*)0)
+/*------------------------------------Global Variables------------------------------------------------*/
+static volatile void (*g_callBackPtr_0)(void) = NULL_PTR;
+static volatile void (*g_callBackPtr_1)(void) = NULL_PTR;
+static volatile void (*g_callBackPtr_2)(void) = NULL_PTR;
+/*-------------------------------------FUNCTIONS DEFINITIONS------------------------------------------*/
+
+ISR(INT0_vect){
+    (*g_callBackPtr)();
+}
+
+ISR(INT1_vect){
+	(*g_callBackPtr)();
+}
+
+ISR(INT2_vect){
+
+}
+
+void useExternalInterrupts(const External_Interrupts_configType * External_Interrupts_configType_Ptr){
+	SREG   = (1<<7);
+	GICR   =  ( GICR  & 0b00011111 ) | ((External_Interrupts_configType_Ptr->mode & 0b00000111)<<(INT2));
+	MCUCR  =  ( MCUCR & 0b11111100 ) | ((External_Interrupts_configType_Ptr->INT0_CTRL & 0b00000011)<<(ISC00));
+	MCUCR  =  ( MCUCR & 0b11110011 ) | ((External_Interrupts_configType_Ptr->INT1_CTRL & 0b00000011)<<(ISC10));
+	MCUCSR =  ( MCUCR & 0b10111111 ) | ((External_Interrupts_configType_Ptr->INT1_CTRL & 0b00000001)<<(ISC10));
+}
+
+void INT0_setCallBack(void(*setCallBack_Ptr)(void)){
+	g_callBackPtr_0 = setCallBack_Ptr ;
+}
+
+void INT1_setCallBack(void(*setCallBack_Ptr)(void)){
+	g_callBackPtr_1 = setCallBack_Ptr ;
+}
+void INT2_setCallBack(void(*setCallBack_Ptr)(void)){
+	g_callBackPtr_2 = setCallBack_Ptr ;
+}
+
+

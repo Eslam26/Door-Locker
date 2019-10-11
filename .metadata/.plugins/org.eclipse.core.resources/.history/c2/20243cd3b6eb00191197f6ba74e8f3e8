@@ -1,0 +1,316 @@
+/*
+ * main.c
+ *
+ *  Created on: Oct 4, 2019
+ *      Author: eslamelnaggar
+ */
+
+/*------------------------------------------------------INCLUDES-------------------------------------------------------------------------*/
+#include "micro_config.h"
+#include "uart.h"
+#include "timer1.h"
+#include "external_eeprom.h"
+
+/*---------------------------------------------------DEFINITIONS--------------------------------------------------------------------------*/
+#define ECU_READY 0x11                                   /* defines Ready Signal */
+#define PASSWORD_COMMAND  0x01                           /* defines Password Request Signal */
+#define PASSWORD_CONFIRMATION_COMMAND 0x02               /* defines Password Confirmation Request Signal */
+#define PASSWORD_MATCH_CONFIRMATION_COMMAND 0x03         /* defines Password Match Confirmation Signal */
+#define PASSWORD_MATCH_NOT_CONFIRMATION_COMMAND 0x04     /* defines Password Not matched Confirmation Signal */
+#define PASSWORD_SCREEN_COMMAND 0x05                     /* defines Password Screen Signal */
+#define REQUEST_SCREEN_COMMAND 0x06                      /* defines Options Screen Signal */
+#define OPEN_DOOR_COMMAND 0x07                           /* defines Open Door signal */
+#define DOOR_IS_OPENNING_COMMAND 0x08                    /* defines Opening state of the door signal */
+#define DOOR_IS_LOCKING_COMMAND 0x09                     /* defines Closing state of the door signal */
+#define COMPLETE_TASK_COMMAND 0x0A                       /* defines completing task signal */
+#define ALARM_COMMAND 0x0B                               /* defines Alert Signal */
+#define GET_PASSWORD_DONE 0x0C                           /* defines state of getting saved password from EXT-EEPROM */
+#define BASE_ADDRESS_LOCATION 0x0002                     /* defines the base address location which the password has been saved in the memory */
+
+#define BUZZER_PORT_DIRECTION DDRD                       /* defines the port direction that the buzzer is being connected */
+#define BUZZER_PORT PORTD                                /* defines the port out that the buzzer is being connected */
+#define BUZZER_PIN PD2                                   /* defines which pin that the buzzer is connected to */
+#define MOTOR_PORT_DIRECTION DDRC                        /* defines the port direction that the motor is being connected */
+#define MOTOR_PORT PORTC                                 /* defines the port out that the motor is being connected */
+#define MOTOR_IN1 4                                      /* defines which pin that the first input of the motor is connected to */
+#define MOTOR_IN2 5                                      /* defines which pin that the second input of the motor is connected to */
+#define MOTOR_EN 3                                       /* defines which pin that the enable pin of the motor is connected to */
+#define NULL_Ptr ((void*)0)
+#define ZERO 0                                           /* defines 0 number
+
+/*------------------------------------------------FUNCTIONS DECLARATIONS------------------------------------------------------------------*/
+
+uint8 recieveData(void);                                 /* declaration of the function that recieve data from HMI_ECU */
+void passwordCreation(void);                             /* declaration of the function that creates a new password    */
+void passwordConfirmation(void);                         /* declaration of the function that match the rentered password with the first one */
+void savePassword (uint8 * a_pass);                      /* declaration of the function that save the new password in the EEPROM */
+void comparingWithSavedPassword (void);                  /* declaration of the function that compare the requested password with the saved one in the EEPROM */
+void openCloseDoor(void);                                /* declaration of the function that opens and closes the door */
+void buzzer(void);                                       /* declaration of the function that turns on and off the buzzer */
+void calledBackFunction (void);                          /* declaration of the function that will be called by Timer 1 when performs its ISR */
+void sendData(uint8 data);                               /* declaration of the function that send data to HMI_ECU */
+
+/*-------------------------------------------------GLOBAL VARIABLES-----------------------------------------------------------------------*/
+uint8 g_password[6] = { 0 };                             /* array that stores the sent passowrd form HMI_ECU */
+uint8 g_data;                                            /* variable to store the recieved data */
+uint8 g_counter = 0;                                     /* variable acts as seconds counter */
+uint8 g_errorCounter;                                    /* counter for incorrect password entered */
+Timer1_configType * Timer1_configType_Ptr = NULL_Ptr;
+Timer1_compare_1A * Timer1_compare_1A_configType_Ptr = NULL_Ptr;
+	/*
+	 * setting the intial parameter in order to pass it to a function that intializes Timer1 Driver
+	 */
+Timer1_configType TIMER1_configType = {CTC_OCR1A, F_CPU_256, 0};
+	/*
+	 * setting the intial parameter in order to pass it to a function that intializes compare A match output mode
+	 */
+Timer1_compare_1A Timer1_compare_1A_configType = {0, compareMode_1A, 31250};
+
+/*--------------------------------------------------STRUCTURES----------------------------------------------------------------------------*/
+
+int main() {
+
+	/*
+	 * setting motor and buzzer pins as outputs
+	 */
+	SET_BIT(MOTOR_PORT_DIRECTION,MOTOR_IN1);
+	SET_BIT(MOTOR_PORT_DIRECTION,MOTOR_IN2);
+	SET_BIT(MOTOR_PORT_DIRECTION,MOTOR_EN);
+	SET_BIT(BUZZER_PORT_DIRECTION,BUZZER_PIN);
+
+	/*
+	 * setting the intial parameter in order to pass it to a function that intializes USART Driver
+	 */
+	Uart_configType UART_config = { Asynchronus, Disabled, _2bit, _8bit,
+				Rising_Transmitted_Falling_Recieved, 0, multi_OFF, 9600 };
+
+
+	Timer1_configType_Ptr = &TIMER1_configType;
+	Timer1_compare_1A_configType_Ptr = &Timer1_compare_1A_configType;
+
+	Timer1_init(&TIMER1_configType);           /*intializes timer 1*/
+	Timer1_setCallBack(calledBackFunction);    /*passing the address of the function that will be called when timer completes its task */
+	UART_init(&UART_config);                   /*intializes USART Driver */
+	EEPROM_init();                             /*intializes EEPROM */
+	while (UART_recieveByte() != ECU_READY);   /* waiting HMI_ECU to sent ECU_READY signal */
+	UART_sendByte(ECU_READY);
+	while (UART_recieveByte() != ECU_READY);   /* waiting HMI_ECU to sent ECU_READY si */
+	while (1) {
+		g_data = recieveData();                /* recieving command from HMI_ECU */
+		switch (g_data) {                      /* switching between functions regarding the recieved command */
+		case PASSWORD_COMMAND:
+			passwordCreation();
+			break;
+		case PASSWORD_CONFIRMATION_COMMAND:
+			passwordConfirmation();
+			break;
+		case PASSWORD_SCREEN_COMMAND:
+			comparingWithSavedPassword();
+			break;
+		case OPEN_DOOR_COMMAND:
+			openCloseDoor();
+			break;
+		default:
+			break;
+
+		}
+
+	}
+
+}
+
+/*----------------------------------------------------------------------------------------------------
+ [Function Name]:  passwordCreation
+ [Description]  :  This function is responsible for password creation
+ [Returns]      :  This function returns void
+ ----------------------------------------------------------------------------------------------------*/
+void passwordCreation(void) {
+	uint8 i = 0;
+	/* looping until HMI_ECU sends COMPLETE_TASK_COMMAND */
+	while (UART_recieveByte() != COMPLETE_TASK_COMMAND) {
+		g_password[i] = UART_recieveByte(); /* storing the sent password in g_password array */
+		i++;
+	}
+}
+
+/*----------------------------------------------------------------------------------------------------
+ [Function Name]:  passwordConfirmation
+ [Description]  :  This function is responsible for matching the rentered password with the first one
+ [Returns]      :  This function returns void
+ ----------------------------------------------------------------------------------------------------*/
+void passwordConfirmation(void) {
+
+	uint8 i = 0;
+	uint8 flag = 0;
+	/* looping until HMI_ECU sends COMPLETE_TASK_COMMAND */
+	while (UART_recieveByte() != COMPLETE_TASK_COMMAND) {
+		if (g_password[i] == UART_recieveByte()) {
+
+		} else {
+			flag = 1;  /* not matched occurs */
+		}
+		i++;
+	}
+	if(flag)
+	{
+		/* send not matched command to HMI_ECU */
+		UART_sendByte(PASSWORD_MATCH_NOT_CONFIRMATION_COMMAND);
+
+	}
+	else
+	{
+
+		/*
+		 * saving the password in EEPROM and
+		 * sending to HMI_ECU match confirmation command
+		 */
+		savePassword(g_password);
+		UART_sendByte(PASSWORD_MATCH_CONFIRMATION_COMMAND);
+	}
+}
+
+/*----------------------------------------------------------------------------------------------------
+ [Function Name]:  savePassword
+ [Description]  :  This function is responsible for writing the new password in EEPROM
+ [Args]
+ [IN]           :  uint8 * a_pass
+ 	 	 	 	 	 this arg shall contains the address of the array that stores the password
+ [Returns]      :  This function returns void
+ ----------------------------------------------------------------------------------------------------*/
+void savePassword (uint8 * a_pass)
+{
+	uint8 i = 0;
+	while(i!=5) /* password size */
+	{
+		EEPROM_writeByte(BASE_ADDRESS_LOCATION+i,a_pass[i]); /* writing in EEPROM byte by byte */
+		i++;
+	}
+}
+
+/*----------------------------------------------------------------------------------------------------
+ [Function Name]:  comparingWithSavedPassword
+ [Description]  :  This function is responsible for comparing the requested password with the saved one in the EEPROM
+ [Returns]      :  This function returns void
+ ----------------------------------------------------------------------------------------------------*/
+void comparingWithSavedPassword (void)
+{
+	uint8 i = 0;
+	uint8 * g_password_Ptr = g_password;
+	while(i!=5) /* looping until password size to get password from EEPROM */
+		{
+			EEPROM_readByte(BASE_ADDRESS_LOCATION+i,g_password_Ptr+i);
+			i++;
+		}
+	UART_sendByte(GET_PASSWORD_DONE); /* send to HMI_ECU GET_PASSWORD_DONE command */
+	while(UART_recieveByte() != ECU_READY); /* looping until HMI_ECU sends ECU_READY signal */
+	i = 0;
+		uint8 flag = 0;
+		/* looping until HMI_ECU sends COMPLETE_TASK_COMMAND */
+		while (UART_recieveByte() != COMPLETE_TASK_COMMAND) {
+			if (g_password[i] == UART_recieveByte()) {
+
+			} else {
+				flag = 1; /* Incorrect password entered */
+			}
+			i++;
+		}
+		if(flag)
+		{
+			g_errorCounter++;
+			if(g_errorCounter == 3)
+			{
+				/*
+				 * after 3 times incorrect password entered buzzer starts and sending to HMI_ECU ALARM_COMMAND
+				 */
+				UART_sendByte(ALARM_COMMAND);
+				buzzer();
+				g_errorCounter=0;
+			}
+			else{
+			UART_sendByte(PASSWORD_MATCH_NOT_CONFIRMATION_COMMAND);
+			}
+		}
+		else
+		{
+			UART_sendByte(PASSWORD_MATCH_CONFIRMATION_COMMAND);
+			savePassword(g_password);
+			g_errorCounter=0;
+		}
+
+}
+
+/*----------------------------------------------------------------------------------------------------
+ [Function Name]:  openCloseDoor
+ [Description]  :  This function is responsible for opening and closing the door
+ [Returns]      :  This function returns void
+ ----------------------------------------------------------------------------------------------------*/
+void openCloseDoor(void){
+	Timer1_compareMode_OCR1A(&Timer1_compare_1A_configType);
+	UART_sendByte(DOOR_IS_OPENNING_COMMAND);
+	SET_BIT(MOTOR_PORT,MOTOR_EN);
+	SET_BIT(MOTOR_PORT,MOTOR_IN1);
+	CLEAR_BIT(MOTOR_PORT,MOTOR_IN2);
+	g_counter = 0;
+	while(g_counter != 15);
+	g_counter = 0;
+    SET_BIT(MOTOR_PORT,MOTOR_IN2);
+	CLEAR_BIT(MOTOR_PORT,MOTOR_IN1);
+	UART_sendByte(DOOR_IS_LOCKING_COMMAND);
+	while(g_counter != 15);
+	CLEAR_BIT(MOTOR_PORT,MOTOR_EN);
+	CLEAR_BIT(MOTOR_PORT,MOTOR_IN1);
+	CLEAR_BIT(MOTOR_PORT,MOTOR_IN2);
+	UART_sendByte(COMPLETE_TASK_COMMAND);
+
+}
+
+/*----------------------------------------------------------------------------------------------------
+ [Function Name]:  passwordConfirmation
+ [Description]  :  This function is responsible for matching the rentered password with the first one
+ [Returns]      :  This function returns void
+ ----------------------------------------------------------------------------------------------------*/
+void buzzer(void){
+	Timer1_compareMode_OCR1A(&Timer1_compare_1A_configType);
+	g_counter = 0;
+	SET_BIT(BUZZER_PORT,BUZZER_PIN);
+	while(g_counter != 60);
+    CLEAR_BIT(BUZZER_PORT,BUZZER_PIN);
+	UART_sendByte(COMPLETE_TASK_COMMAND);
+}
+
+/*----------------------------------------------------------------------------------------------------
+ [Function Name]:  passwordConfirmation
+ [Description]  :  This function is responsible for matching the rentered password with the first one
+ [Returns]      :  This function returns void
+ ----------------------------------------------------------------------------------------------------*/
+uint8 recieveData(void) {
+	while (UART_recieveByte() != ECU_READY)
+		;
+	UART_sendByte(ECU_READY);
+	g_data = UART_recieveByte();
+	UART_sendByte(ECU_READY);
+	return g_data;
+}
+
+/*----------------------------------------------------------------------------------------------------
+ [Function Name]:  passwordConfirmation
+ [Description]  :  This function is responsible for matching the rentered password with the first one
+ [Returns]      :  This function returns void
+ ----------------------------------------------------------------------------------------------------*/
+void sendData(uint8 data) {
+	UART_sendByte(ECU_READY);
+	while (UART_recieveByte() != ECU_READY)
+		;
+	UART_sendByte(data);
+	while (UART_recieveByte() != ECU_READY)
+		;
+}
+
+/*----------------------------------------------------------------------------------------------------
+ [Function Name]:  passwordConfirmation
+ [Description]  :  This function is responsible for matching the rentered password with the first one
+ [Returns]      :  This function returns void
+ ----------------------------------------------------------------------------------------------------*/
+void calledBackFunction (void){
+	g_counter++;
+}

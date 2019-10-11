@@ -1,0 +1,94 @@
+/*******************************************************************************************************
+ *  [FILE NAME]   :      <i2c.c>                                                                       *
+ *  [AUTHOR]      :      <Ecslam EL-Naggar>                                                            *
+ *  [DATE CREATED]:      <Oct 4, 2019>                                                                 *
+ *  [Description} :      <Source file for the TWI Driver                                               *
+ ******************************************************************************************************/
+
+
+
+/*--------------------------------------INCLUDES--------------------------------------------------------*/
+#include "i2c.h" /* include the header file for the TWI Driver */
+
+/*-------------------------------FUNCTIONS DEFINITIONS--------------------------------------------------*/
+
+/*----------------------------------------------------------------------------------------------------
+ [Function Name]:  TWI_init
+ [Description]  :  This function is responsible for initializing TWI driver
+
+ [Returns]      :  This function returns void
+ ----------------------------------------------------------------------------------------------------*/
+
+void TWI_init(const I2C_configType * configType_Ptr)
+{
+	TWSR = configType_Ptr->prescaler;
+	TWBR = configType_Ptr->valueTWBR;
+	TWAR = (TWAR & 0b00000001) | (((configType_Ptr->address)<<1) & 0b11111110);
+	TWAR = (TWAR & 0b11111110) | ((configType_Ptr->generalCallRecognition & 0b00000001)<<TWGCE);
+	TWCR = (1<<TWEN);
+}
+
+
+void TWI_start(void)
+{
+	TWCR = (1 << TWINT) | (1 << TWSTA) | (1 << TWEN);
+	while(BIT_IS_CLEAR(TWCR,TWINT));
+}
+
+void TWI_stop(void)
+{
+
+    TWCR = (1 << TWINT) | (1 << TWSTO) | (1 << TWEN);
+
+}
+
+void TWI_write(uint8 data)
+{
+    /* Put data On TWI data Register */
+    TWDR = data;
+    /*
+	 * Clear the TWINT flag before sending the data TWINT=1
+	 * Enable TWI Module TWEN=1
+	 */
+    TWCR = (1 << TWINT) | (1 << TWEN);
+    /* Wait for TWINT flag set in TWCR Register(data is send successfully) */
+    while(BIT_IS_CLEAR(TWCR,TWINT));
+}
+
+uint8 TWI_readWithACK(void)
+{
+	/*
+	 * Clear the TWINT flag before reading the data TWINT=1
+	 * Enable sending ACK after reading or receiving data TWEA=1
+	 * Enable TWI Module TWEN=1
+	 */
+    TWCR = (1 << TWINT) | (1 << TWEN) | (1 << TWEA);
+    /* Wait for TWINT flag set in TWCR Register (data received successfully) */
+    while(BIT_IS_CLEAR(TWCR,TWINT));
+    /* Read Data */
+    return TWDR;
+}
+
+uint8 TWI_readWithNACK(void)
+{
+	/*
+	 * Clear the TWINT flag before reading the data TWINT=1
+	 * Enable TWI Module TWEN=1
+	 */
+    TWCR = (1 << TWINT) | (1 << TWEN);
+    /* Wait for TWINT flag set in TWCR Register (data received successfully) */
+    while(BIT_IS_CLEAR(TWCR,TWINT));
+    /* Read Data */
+    return TWDR;
+}
+
+uint8 TWI_getStatus(void)
+{
+    uint8 status;
+    /* masking to eliminate first 3 bits and get the last 5 bits (status bits) */
+    status = TWSR & 0xF8;
+    return status;
+}
+
+
+

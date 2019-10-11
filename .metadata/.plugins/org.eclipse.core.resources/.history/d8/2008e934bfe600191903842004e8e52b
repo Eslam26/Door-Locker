@@ -1,0 +1,26 @@
+/*******************************************************************************************************
+ *  [FILE NAME]   :      <timer0.c>                                                                    *
+ *  [AUTHOR]      :      <Eslam EL-Naggar>                                                             *
+ *  [DATE CREATED]:      <Oct 4, 2019>                                                                 *
+ *  [Description} :      <This file contains Functions Declarations and defines statements             *
+ ******************************************************************************************************/
+
+/*--------------------------------------INCLUDES--------------------------------------------------------*/
+#include "timer0.h"
+
+
+/*------------------------------------FUNCTIONS DEFINITIONS-------------------------------------------*/
+/*----------------------------------------------------------------------------------------------------
+ [Function Name]:  Timer0_init
+ [Description]  :  This function is responsible for initializing UART
+ [Returns]      :  This function returns void
+ ----------------------------------------------------------------------------------------------------*/
+void Timer0_init(const Timer0_configType * configType_Ptr)
+{
+	TCCR0 = (1<<FOC0);
+	TCCR0 = (TCCR0 & 0b10111111) | ((configType_Ptr->mode & 0b00000001)<<WGM00);
+	TCCR0 = (TCCR0 & 0b11110111) | (((configType_Ptr->mode & 0b00000010)>>1)<<WGM01);
+	TCCR0 = (TCCR0 & 0b11001111) | ((configType_Ptr->compareMode & 0b00000011)<<COM00);
+
+
+}

@@ -1,0 +1,41 @@
+/*
+/******************************************************************************************************
+ *  [FILE NAME]   :      <keypad.c>                                                                    *
+ *  [AUTHOR]      :      <Eslam EL-Naggar>                                                             *
+ *  [DATE CREATED]:      <Oct 4, 2019>                                                                 *
+ *  [Description} :      <This file contains the definitions of the functions that using for keypad>   *
+ ******************************************************************************************************/
+
+
+#ifndef UART_H_
+#define UART_H_
+
+/*--------------------------------------INCLUDES-----------------------------------------------------*/
+#include <avr/io.h>
+#include "common_macros.h"
+#include "std_types.h"
+
+/*-----------------------------------DEFINITIONS and Configurations--------------------------------------*/
+
+
+/*-----------------------------------------ENUMS---------------------------------------------------------*/
+typedef enum{
+	Interrupt, Pulling
+}Uart_type;
+
+/*--------------------------------------Structures and Unions------------------------------------------*/
+typedef struct{
+   Uart_type method;
+}Uart_configType;
+
+/*---------------------------------------FUNCTION DECLARATIONS----------------------------------------*/
+
+void UART_init(const Uart_configType * );
+void UART_sendByte(uint8);
+void UART_recieveByte(void);
+void UART_sendString(const char * );
+void UART_recieveString(void);
+
+
+
+#endif /* UART_H_ */

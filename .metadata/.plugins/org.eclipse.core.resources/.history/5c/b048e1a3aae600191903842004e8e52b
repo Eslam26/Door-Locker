@@ -1,0 +1,77 @@
+/******************************************************************************************************
+ *  [FILE NAME]   :      <keypad.c>                                                                    *
+ *  [AUTHOR]      :      <Eslam EL-Naggar>                                                             *
+ *  [DATE CREATED]:      <Oct 4, 2019>                                                                 *
+ *  [Description} :      <This file contains the definitions of the functions that using for keypad>   *
+ ******************************************************************************************************/
+
+/*------------------------------------------INCLUDES--------------------------------------------------*/
+
+#include "uart.h"
+
+
+/*------------------------------------FUNCTIONS DEFINITIONS-------------------------------------------*/
+
+/*----------------------------------------------------------------------------------------------------
+ [Function Name]:  UART_init
+ [Description]  :  This function is responsible for initializing UART
+ [Returns]      :  This function returns void
+ ----------------------------------------------------------------------------------------------------*/
+
+void UART_init(const Uart_configType * configType_Ptr)
+{
+	UCSRA = (UCSRA && 0b11111101) | ((!(configType_Ptr->mode) && 0b00000001)<<U2X);
+	UCSRA = (UCSRA && 0b11111110) | ((configType_Ptr->multiMode && 0b00000001)<<MPCM);
+
+	UCSRB = (UCSRB && 0b00011111) | ((configType_Ptr->interrupt && 0b00000001)<<UDRIE);
+	UCSRB = (1<<RXEN) | (1<<TXEN);
+	UCSRB = (UCSRB && 0b11111011) | ((configType_Ptr->size   && 0b00000100)<<UCSZ2);
+
+
+	UCSRC = (1<<URSEL) ;
+	UCSRC = (UCSRC && 0b10111111) | ((configType_Ptr->mode   && 0b00000001)<<UMSEL);
+	UCSRC = (UCSRC && 0b11001111) | ((configType_Ptr->parity && 0b00000011)<<UPM0);
+    UCSRC = (UCSRC && 0b11110111) | ((configType_Ptr->stop   && 0b00000001)<<USBS);
+    UCSRC = (UCSRC && 0b11111001) | ((configType_Ptr->size   && 0b00000011)<<UCSZ0);
+    UCSRC = (UCSRC && 0b11111110) | ((configType_Ptr->clock  && 0b00000001)<<UCPOL);
+
+}
+
+
+void UART_sendByte(const uint8 data)
+{
+	UDR = data;
+    while(BIT_IS_CLEAR(UCSRA,TXC)){} // Wait until the transmission is complete TXC = 1
+    SET_BIT(UCSRA,TXC); // Clear the TXC flag
+}
+
+uint8 UART_recieveByte(void)
+{
+	/* RXC flag is set when the UART receive data so wait until this
+		 * flag is set to one */
+		while(BIT_IS_CLEAR(UCSRA,RXC)){}
+		/* Read the received data from the Rx buffer (UDR) and the RXC flag
+		   will be cleared after read this data */
+	    return UDR;
+}
+
+void UART_sendString(const uint8 * string )
+{
+	while(*string != '\0')
+		{
+			UART_sendByte(*string);
+			string++;
+		}
+}
+
+void UART_recieveString(uint8 * string)
+{
+	    uint8 i = 0;
+		string[i] = UART_recieveByte();
+		while(string[i] != '#')
+		{
+			i++;
+			string[i] = UART_recieveByte();
+		}
+		string[i] = '\0';
+}

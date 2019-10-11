@@ -1,0 +1,38 @@
+/*******************************************************************************************************
+ *  [FILE NAME]   :      <keypad.h>                                                                    *
+ *  [AUTHOR]      :      <Eslam EL-Naggar>                                                             *
+ *  [DATE CREATED]:      <Oct 4, 2019>                                                                 *
+ *  [Description} :      <header file for KeyPad Driver                                                *
+ ******************************************************************************************************/
+
+
+/*******************************************************************************************************
+ *      4x3 keyPad                            |                     4x4 keypad                         *
+ * --------------------                       |            --------------------------                  *
+ * | (1)  | (2) | (3) |                       |            | (7)  | (8) | (9) | (/) |                  *
+ * | (4)  | (5) | (6) |                       |            | (4)  | (5) | (6) | (x) |                  *
+ * | (7)  | (8) | (9) |                       |            | (1)  | (2) | (3) | (-) |                  *
+ * | (*)  | (0) | (#) |                       |            | (c)  | (0) | (=) | (+) |                  *
+ * --------------------                       |            --------------------------                  *
+ *                                            |                                                        *
+ *                                                                                                     *
+ *******************************************************************************************************/
+#ifndef KEYPAD_H_
+#define KEYPAD_H_
+
+/*---------------------------------------Includes-----------------------------------------------------------------------------*/
+#include "common_macros.h"
+#include "std_types.h"
+#include <avr/io.h>
+/*---------------------Definitions and configurations-------------------------------------------------------------------------*/
+#define N_COL 4                              /*   define number of coloumns        */
+#define N_ROW 4                              /*     define number of rows          */
+#define KEYPAD_PORT_DIRECTION DDRA           /*  define the direction of the port  */
+#define KEYPAD_PORT_OUT PORTA                /*      define the port out           */
+#define KEYPAD_PORT_IN PINA                  /*      define the port in            */
+
+/*------------------FUNCTION DECLARATIONS--------------------------------------------------------------------------------------*/
+
+uint8 keyPad_getPressedKey(void);            /* declaration for keyPad_getPressedKey function */
+
+#endif /* KEYPAD_H_ */

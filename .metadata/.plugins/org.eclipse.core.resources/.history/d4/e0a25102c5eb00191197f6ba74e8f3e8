@@ -1,0 +1,43 @@
+/*******************************************************************************************************
+ *  [FILE NAME]   :      <external_interrupts.h>                                                       *
+ *  [AUTHOR]      :      <Eslam EL-Naggar>                                                             *
+ *  [DATE CREATED]:      <Oct 4, 2019>                                                                 *
+ *  [Description} :      <header file for atmega16 external interrupts>                                *
+ ******************************************************************************************************/
+#ifndef EXTERNAL_INTERRUPTS_H_
+#define EXTERNAL_INTERRUPTS_H_
+
+/*-----------------------------------------INCLUDES--------------------------------------------------*/
+
+#include "micro_config.h"
+#include "common_macros.h"
+
+/*------------------------------------------ENUMS----------------------------------------------------*/
+typedef enum{
+	INT1_OFF_INT0_OFF_INT2_OFF, INT1_OFF_INT0_OFF_INT2_ON, INT1_OFF_INT0_ON_INT2_OFF, INT1_OFF_INT0_ON_INT2_ON, INT1_ON_INT0_OFF_INT2_OFF,
+	INT1_ON_INT0_OFF_INT2_ON, INT1_ON_INT0_ON_INT2_OFF, INT1_ON_INT0_ON_INT2_ON
+}External_Interrupts_mode;
+
+typedef enum{
+	LOW_LEVEL, ANY_CHANGE, FALLING_EDGE, RISING_EDGE
+}INT0_CONTROL;
+
+typedef enum{
+	LOW_LEVEL, ANY_CHANGE, FALLING_EDGE, RISING_EDGE
+}INT1_CONTROL;
+
+typedef enum{
+	FALLING_EDGE, RISING_EDGE
+}INT2_CONTROL;
+
+/*------------------------------------STRUCTURES-----------------------------------------------------*/
+typedef struct{
+	External_Interrupts_mode mode;
+	INT0_CONTROL INT0_CTRL;
+	INT1_CONTROL INT1_CTRL;
+	INT2_CONTROL INT2_CTRL;
+}External_Interrupts_configType;
+
+/*---------------------------------FUNCTIONS DECLARATIONS--------------------------------------------*/
+void useExternalInterrupts(const External_Interrupts_configType * External_Interrupts_configType_Ptr);
+#endif /* EXTERNAL_INTERRUPTS_H_ */

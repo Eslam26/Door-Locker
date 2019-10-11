@@ -1,0 +1,23 @@
+/*******************************************************************************************************
+ *  [FILE NAME]   :      <external_interrupts.c>                                                       *
+ *  [AUTHOR]      :      <Eslam EL-Naggar>                                                             *
+ *  [DATE CREATED]:      <Oct 4, 2019>                                                                 *
+ *  [Description} :      <source file for atmega16 external interrupts>                                *
+ ******************************************************************************************************/
+
+/*-----------------------------------------INCLUDES---------------------------------------------------*/
+
+#include "external_interrupts.h"
+
+
+/*-------------------------------------FUNCTIONS DEFINITIONS-----------------------------------------*/
+
+void useExternalInterrupts(const External_Interrupts_configType * External_Interrupts_configType_Ptr){
+	SREG   = (1<<7);
+	GICR   =  ( GICR  & 0b00011111 ) | ((External_Interrupts_configType_Ptr->mode & 0b00000111)<<(INT2));
+	MCUCR  =  ( MCUCR & 0b11111100 ) | ((External_Interrupts_configType_Ptr->INT0_CTRL & 0b00000011)<<(ISC00));
+	MCUCR  =  ( MCUCR & 0b11110011 ) | ((External_Interrupts_configType_Ptr->INT1_CTRL & 0b00000011)<<(ISC10));
+	MCUCSR =  ( MCUCR & 0b10111111 ) | ((External_Interrupts_configType_Ptr->INT1_CTRL & 0b00000001)<<(ISC10));
+}
+
+

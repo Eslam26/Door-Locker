@@ -1,0 +1,5 @@
+1570174633053	Rename resource 'Door_Locker'
+1570177020085	Delete resource 'Control_ECU/common_macros'
+1570178779478	Delete resource 'Control_ECU/keypad.h'
+1570178781830	Delete resource 'Control_ECU/keypad.c'
+1570199187022	Delete resource 'HMI_ECU/timer0.h'

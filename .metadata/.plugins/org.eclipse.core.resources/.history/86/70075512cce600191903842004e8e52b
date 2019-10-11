@@ -1,0 +1,22 @@
+/*******************************************************************************************************
+ *  [FILE NAME]   :      <keypad.h>                                                                    *
+ *  [AUTHOR]      :      <Eslam EL-Naggar>                                                             *
+ *  [DATE CREATED]:      <Oct 4, 2019>                                                                 *
+ *  [Description} :      <This file contains Functions Declarations and defines statements             *
+ ******************************************************************************************************/
+
+/*--------------------------------------INCLUDES--------------------------------------------------------*/
+#include <avr/io.h>
+#include "common_macros.h"
+#include "std_types.h"
+
+
+/*---------------------------------------FUNCTION DECLARATIONS------------------------------------------*/
+
+void TWI_init(void);
+void TWI_start(void);
+void TWI_stop(void);
+void TWI_write(uint8 data);
+uint8 TWI_readWithACK(void); //read with send Ack
+uint8 TWI_readWithNACK(void); //read without send Ack
+uint8 TWI_getStatus(void);

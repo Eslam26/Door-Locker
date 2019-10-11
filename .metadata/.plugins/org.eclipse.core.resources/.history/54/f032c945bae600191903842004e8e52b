@@ -1,0 +1,39 @@
+/*******************************************************************************************************
+ *  [FILE NAME]   :      <timer0.c>                                                                    *
+ *  [AUTHOR]      :      <Eslam EL-Naggar>                                                             *
+ *  [DATE CREATED]:      <Oct 4, 2019>                                                                 *
+ *  [Description} :      <This file contains Functions Declarations and defines statements             *
+ ******************************************************************************************************/
+
+#ifndef TIMER0_H_
+#define TIMER0_H_
+
+/*--------------------------------------INCLUDES--------------------------------------------------------*/
+#include <avr/io.h>
+#include "common_macros.h"
+#include "std_types.h"
+
+/*-----------------------------------DEFINITIONS and Configurations--------------------------------------*/
+
+
+/*-----------------------------------------ENUMS---------------------------------------------------------*/
+typedef enum{
+	Normal, Compare
+}Timer0_mode;
+
+/*--------------------------------------Structures and Unions-------------------------------------------*/
+
+typedef struct {
+	Timer0_mode mode;
+}Timer0_configType;
+
+/*---------------------------------------FUNCTION DECLARATIONS------------------------------------------*/
+
+void Timer0_init(const Uart_configType * configType_Ptr)
+{
+
+
+}
+
+
+#endif /* TIMER0_H_ */
