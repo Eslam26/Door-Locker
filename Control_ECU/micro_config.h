@@ -2,7 +2,7 @@
  *  [FILE NAME]   :      <micro_config.h>                                                                                 *
  *  [AUTHOR]      :      <Eslam EL-Naggar>                                                                                *
  *  [DATE CREATED]:      <Oct 4, 2019>                                                                                    *
- *  [Description} :      <header file contains intial setups for the microcontroller and including essential libraries>   *
+ *  [Description} :      <header file contains initial setups for the microcontroller and including essential libraries>   *
  *************************************************************************************************************************/
 
 #ifndef MICRO_CONFIG_H_

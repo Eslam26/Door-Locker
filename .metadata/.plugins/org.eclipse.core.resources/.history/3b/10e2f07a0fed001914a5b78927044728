@@ -1,0 +1,132 @@
+/*******************************************************************************************************
+ *  [FILE NAME]   :      <i2c.c>                                                                       *
+ *  [AUTHOR]      :      <Ecslam EL-Naggar>                                                            *
+ *  [DATE CREATED]:      <Oct 4, 2019>                                                                 *
+ *  [Description} :      <Source file for the TWI Driver>                                              *
+ ******************************************************************************************************/
+
+
+
+/*--------------------------------------INCLUDES--------------------------------------------------------*/
+#include "i2c.h" /* include the header file for the TWI Driver */
+
+/*-------------------------------FUNCTIONS DEFINITIONS--------------------------------------------------*/
+
+/*----------------------------------------------------------------------------------------------------
+ [Function Name]:  TWI_init
+ [Description]  :  This function is responsible for initializing UART
+ [Args]
+ [in]           :  const I2C_configType * configType_Ptr
+ 	 	 	 	 	 	 this arg shall indictaes the address of the structure that contains
+ 	 	 	 	 	 	 the initial parameters to intialize the TWI driver
+ [Returns]      :  This function returns void
+ ----------------------------------------------------------------------------------------------------*/
+
+void TWI_init(const I2C_configType * configType_Ptr)
+{
+
+	TWSR = configType_Ptr->prescaler; /* adjust frequency prescaler */
+  	TWBR = configType_Ptr->valueTWBR; /* writing the value of TWBR  */
+  	/* setting the device address in the most 7 significiant bits */
+	TWAR = (TWAR & 0b00000001) | (((configType_Ptr->address)<<1) & 0b11111110);
+	/* setting up the general Call Recognition mode */
+	TWAR = (TWAR & 0b11111110) | ((configType_Ptr->generalCallRecognition & 0b00000001)<<TWGCE);
+	/* enabling TWI driver */
+	TWCR = (1<<TWEN);
+}
+
+/*----------------------------------------------------------------------------------------------------
+ [Function Name]:  TWI_start
+ [Description]  :  This function is responsible for creating the start bit
+ [Returns]      :  This function returns void
+ ----------------------------------------------------------------------------------------------------*/
+
+void TWI_start(void)
+{
+	TWCR = (1 << TWINT) | (1 << TWSTA) | (1 << TWEN);
+	while(BIT_IS_CLEAR(TWCR,TWINT));
+}
+
+/*----------------------------------------------------------------------------------------------------
+ [Function Name]:  TWI_stop
+ [Description]  :  This function is responsible for creating the stop bit
+ [Returns]      :  This function returns void
+ ----------------------------------------------------------------------------------------------------*/
+void TWI_stop(void)
+{
+
+    TWCR = (1 << TWINT) | (1 << TWSTO) | (1 << TWEN);
+
+}
+
+/*----------------------------------------------------------------------------------------------------
+ [Function Name]:  TWI_write
+ [Description]  :  This function is responsible for writing data
+ [Returns]      :  This function returns void
+ ----------------------------------------------------------------------------------------------------*/
+void TWI_write(uint8 data)
+{
+    /* Put data On TWI data Register */
+    TWDR = data;
+    /*
+	 * Clear the TWINT flag before sending the data TWINT=1
+	 * Enable TWI Module TWEN=1
+	 */
+    TWCR = (1 << TWINT) | (1 << TWEN);
+    /* Wait for TWINT flag set in TWCR Register(data is send successfully) */
+    while(BIT_IS_CLEAR(TWCR,TWINT));
+}
+
+/*-------------------------------------------------------------------------------------------------------
+ [Function Name]:  TWI_readWithACK
+ [Description]  :  This function is responsible for reading data and sending ACK after reading the data
+ [Returns]      :  This function returns void
+ ------------------------------------------------------------------------------------------------------*/
+uint8 TWI_readWithACK(void)
+{
+	/*
+	 * Clear the TWINT flag before reading the data TWINT=1
+	 * Enable sending ACK after reading or receiving data TWEA=1
+	 * Enable TWI Module TWEN=1
+	 */
+    TWCR = (1 << TWINT) | (1 << TWEN) | (1 << TWEA);
+    /* Wait for TWINT flag set in TWCR Register (data received successfully) */
+    while(BIT_IS_CLEAR(TWCR,TWINT));
+    /* Read Data */
+    return TWDR;
+}
+
+/*---------------------------------------------------------------------------------------------------------
+ [Function Name]:  TWI_readWithNACK
+ [Description]  :  This function is responsible for reading data without sending ACK after reading the data
+ [Returns]      :  This function returns void
+ --------------------------------------------------------------------------------------------------------*/
+uint8 TWI_readWithNACK(void)
+{
+	/*
+	 * Clear the TWINT flag before reading the data TWINT=1
+	 * Enable TWI Module TWEN=1
+	 */
+    TWCR = (1 << TWINT) | (1 << TWEN);
+    /* Wait for TWINT flag set in TWCR Register (data received successfully) */
+    while(BIT_IS_CLEAR(TWCR,TWINT));
+    /* Read Data */
+    return TWDR;
+}
+
+/*---------------------------------------------------------------------------------------------------------
+ [Function Name]:  TWI_getStatus
+ [Description]  :  This function is responsible for getting the status of the TWI driver
+ [Returns]      :  This function returns void
+ --------------------------------------------------------------------------------------------------------*/
+
+uint8 TWI_getStatus(void)
+{
+    uint8 status;
+    /* masking to eliminate first 3 bits and get the last 5 bits (status bits) */
+    status = TWSR & 0xF8;
+    return status;
+}
+
+
+

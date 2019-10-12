@@ -6,8 +6,10 @@
 		<item key="wholeword" value="false"/>
 		<item key="incremental" value="false"/>
 		<item key="isRegEx" value="false"/>
-		<item key="selection" value="recieveData"/>
+		<item key="selection" value="5"/>
 		<list key="findhistory">
+			<item value="5"/>
+			<item value="OLD_PASSWORD_REQUEST_MESSAGE"/>
 			<item value="recieveData"/>
 			<item value="while (UART_recieveByte() != ECU_READY)"/>
 			<item value="while (UART_recieveByte() != ECU_READY);"/>
@@ -21,8 +23,6 @@
 			<item value="g_switchRequest"/>
 			<item value="0"/>
 			<item value="500"/>
-			<item value="5"/>
-			<item value="4"/>
 		</list>
 		<list key="replacehistory">
 			<item value=""/>

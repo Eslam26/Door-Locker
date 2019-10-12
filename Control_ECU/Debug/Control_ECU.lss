@@ -350,20 +350,22 @@ void TWI_init(const I2C_configType * configType_Ptr)
  20e:	de b7       	in	r29, 0x3e	; 62
  210:	9a 83       	std	Y+2, r25	; 0x02
  212:	89 83       	std	Y+1, r24	; 0x01
-	TWSR = configType_Ptr->prescaler;
+
+	TWSR = configType_Ptr->prescaler; /* adjust frequency prescaler */
  214:	a1 e2       	ldi	r26, 0x21	; 33
  216:	b0 e0       	ldi	r27, 0x00	; 0
  218:	e9 81       	ldd	r30, Y+1	; 0x01
  21a:	fa 81       	ldd	r31, Y+2	; 0x02
  21c:	80 81       	ld	r24, Z
  21e:	8c 93       	st	X, r24
-	TWBR = configType_Ptr->valueTWBR;
+  	TWBR = configType_Ptr->valueTWBR; /* writing the value of TWBR  */
  220:	a0 e2       	ldi	r26, 0x20	; 32
  222:	b0 e0       	ldi	r27, 0x00	; 0
  224:	e9 81       	ldd	r30, Y+1	; 0x01
  226:	fa 81       	ldd	r31, Y+2	; 0x02
  228:	81 81       	ldd	r24, Z+1	; 0x01
  22a:	8c 93       	st	X, r24
+  	/* setting the device address in the most 7 significiant bits */
 	TWAR = (TWAR & 0b00000001) | (((configType_Ptr->address)<<1) & 0b11111110);
  22c:	a2 e2       	ldi	r26, 0x22	; 34
  22e:	b0 e0       	ldi	r27, 0x00	; 0
@@ -381,6 +383,7 @@ void TWI_init(const I2C_configType * configType_Ptr)
  246:	99 1f       	adc	r25, r25
  248:	82 2b       	or	r24, r18
  24a:	8c 93       	st	X, r24
+	/* setting up the general Call Recognition mode */
 	TWAR = (TWAR & 0b11111110) | ((configType_Ptr->generalCallRecognition & 0b00000001)<<TWGCE);
  24c:	a2 e2       	ldi	r26, 0x22	; 34
  24e:	b0 e0       	ldi	r27, 0x00	; 0
@@ -395,6 +398,7 @@ void TWI_init(const I2C_configType * configType_Ptr)
  260:	81 70       	andi	r24, 0x01	; 1
  262:	89 2b       	or	r24, r25
  264:	8c 93       	st	X, r24
+	/* enabling TWI driver */
 	TWCR = (1<<TWEN);
  266:	e6 e5       	ldi	r30, 0x56	; 86
  268:	f0 e0       	ldi	r31, 0x00	; 0
@@ -418,11 +422,16 @@ void TWI_start(void)
  27a:	cf 93       	push	r28
  27c:	cd b7       	in	r28, 0x3d	; 61
  27e:	de b7       	in	r29, 0x3e	; 62
+	/*
+	 * clear TWI Interrupt flag before TWI starts a new job and
+	 * set start bit and enable TWI driver
+	 */
 	TWCR = (1 << TWINT) | (1 << TWSTA) | (1 << TWEN);
  280:	e6 e5       	ldi	r30, 0x56	; 86
  282:	f0 e0       	ldi	r31, 0x00	; 0
  284:	84 ea       	ldi	r24, 0xA4	; 164
  286:	80 83       	st	Z, r24
+	/* Wait for TWINT flag set in TWCR Register(start bit is sent successfully) */
 	while(BIT_IS_CLEAR(TWCR,TWINT));
  288:	e6 e5       	ldi	r30, 0x56	; 86
  28a:	f0 e0       	ldi	r31, 0x00	; 0
@@ -1371,7 +1380,7 @@ void calledBackFunction (void){
 /*------------------------------------Global Variables--------------------------------------------------*/
 static volatile void (*g_callBackPtr)(void) = NULL_PTR;
 
-/*------------------------------------FUNCTIONS DEFINITIONS-------------------------------------------*/
+/*------------------------------------FUNCTIONS DEFINITIONS---------------------------------------------*/
 /* ISR for Normal overflow mode Interrupt */
 ISR(TIMER1_OVF_vect) {
  782:	1f 92       	push	r1
@@ -1551,16 +1560,21 @@ void Timer1_init(const Timer1_configType *Timer1_configType_Ptr) {
  8bc:	de b7       	in	r29, 0x3e	; 62
  8be:	9a 83       	std	Y+2, r25	; 0x02
  8c0:	89 83       	std	Y+1, r24	; 0x01
+	/* enabling global interrupt flag */
 	SREG = (1<<7);
  8c2:	ef e5       	ldi	r30, 0x5F	; 95
  8c4:	f0 e0       	ldi	r31, 0x00	; 0
  8c6:	80 e8       	ldi	r24, 0x80	; 128
  8c8:	80 83       	st	Z, r24
+
+	/* setting these bits by 1 in non PWM modes */
 	TCCR1A = (1 << FOC1A) | (1 << FOC1B);
  8ca:	ef e4       	ldi	r30, 0x4F	; 79
  8cc:	f0 e0       	ldi	r31, 0x00	; 0
  8ce:	8c e0       	ldi	r24, 0x0C	; 12
  8d0:	80 83       	st	Z, r24
+
+	/* setting Timer 1 mode of operation */
 	TCCR1A = (TCCR1A & 0b11111100)
  8d2:	af e4       	ldi	r26, 0x4F	; 79
  8d4:	b0 e0       	ldi	r27, 0x00	; 0
@@ -1576,6 +1590,8 @@ void Timer1_init(const Timer1_configType *Timer1_configType_Ptr) {
  8e8:	89 2b       	or	r24, r25
  8ea:	8c 93       	st	X, r24
 			| ((Timer1_configType_Ptr->mode & 0b00000011) << (WGM10));
+
+	/* setting Timer 1 mode of operation */
 	TCCR1B = (TCCR1B & 0b11100111)
  8ec:	ae e4       	ldi	r26, 0x4E	; 78
  8ee:	b0 e0       	ldi	r27, 0x00	; 0
@@ -1604,6 +1620,8 @@ void Timer1_init(const Timer1_configType *Timer1_configType_Ptr) {
  91c:	82 2b       	or	r24, r18
  91e:	8c 93       	st	X, r24
 			| (((Timer1_configType_Ptr->mode & 0b00001100) >> 2) << (WGM12));
+
+	/* setting the frequency Prescaler */
 	TCCR1B = (TCCR1B & 0b11111000)
  920:	ae e4       	ldi	r26, 0x4E	; 78
  922:	b0 e0       	ldi	r27, 0x00	; 0
@@ -1619,6 +1637,8 @@ void Timer1_init(const Timer1_configType *Timer1_configType_Ptr) {
  936:	89 2b       	or	r24, r25
  938:	8c 93       	st	X, r24
 			| ((Timer1_configType_Ptr->clock & 0b00000111) << (CS10));
+
+	/* setting the value of ICR1 Register */
 	ICR1 = Timer1_configType_Ptr->valueICR1;
  93a:	a6 e4       	ldi	r26, 0x46	; 70
  93c:	b0 e0       	ldi	r27, 0x00	; 0
@@ -1688,6 +1708,8 @@ void Timer1_compareMode_OCR1A(const Timer1_compare_1A *Timer1_OCR1A_compare_Ptr)
  992:	f0 e0       	ldi	r31, 0x00	; 0
  994:	80 e1       	ldi	r24, 0x10	; 16
  996:	80 83       	st	Z, r24
+
+	/* adjust compare output mode  for OC1A */
 	TCCR1A = (TCCR1A & 0b00111111) | ((Timer1_OCR1A_compare_Ptr->compareMode_OC1A & 0b00000011)<< (COM1A0));
  998:	af e4       	ldi	r26, 0x4F	; 79
  99a:	b0 e0       	ldi	r27, 0x00	; 0
@@ -1712,6 +1734,8 @@ void Timer1_compareMode_OCR1A(const Timer1_compare_1A *Timer1_OCR1A_compare_Ptr)
  9c0:	80 2d       	mov	r24, r0
  9c2:	82 2b       	or	r24, r18
  9c4:	8c 93       	st	X, r24
+
+	/* setting the initial value of the timer to start counting from */
 	TCNT1 = Timer1_OCR1A_compare_Ptr->initialValueTimer;
  9c6:	ac e4       	ldi	r26, 0x4C	; 76
  9c8:	b0 e0       	ldi	r27, 0x00	; 0
@@ -1722,6 +1746,8 @@ void Timer1_compareMode_OCR1A(const Timer1_compare_1A *Timer1_OCR1A_compare_Ptr)
  9d2:	11 96       	adiw	r26, 0x01	; 1
  9d4:	9c 93       	st	X, r25
  9d6:	8e 93       	st	-X, r24
+
+	/* setting the value of OCR1B register */
 	OCR1A = Timer1_OCR1A_compare_Ptr->valueOCR1A;
  9d8:	aa e4       	ldi	r26, 0x4A	; 74
  9da:	b0 e0       	ldi	r27, 0x00	; 0
@@ -1759,6 +1785,8 @@ void Timer1_compareMode_OCR1B(const Timer1_compare_1B *Timer1_OCR1B_compare_Ptr)
  a04:	f0 e0       	ldi	r31, 0x00	; 0
  a06:	88 e0       	ldi	r24, 0x08	; 8
  a08:	80 83       	st	Z, r24
+
+	/* adjust compare output mode  for OC1B */
 	TCCR1A = (TCCR1A & 0b11001111) | ((Timer1_OCR1B_compare_Ptr->compareMode_OC1B & 0b00000011)<< (COM1B0));
  a0a:	af e4       	ldi	r26, 0x4F	; 79
  a0c:	b0 e0       	ldi	r27, 0x00	; 0
@@ -1782,7 +1810,7 @@ void Timer1_compareMode_OCR1B(const Timer1_compare_1B *Timer1_OCR1B_compare_Ptr)
  a30:	98 27       	eor	r25, r24
  a32:	82 2b       	or	r24, r18
  a34:	8c 93       	st	X, r24
-	TCNT1 = Timer1_OCR1B_compare_Ptr->initialValueTimer;
+	TCNT1 = Timer1_OCR1B_compare_Ptr->initialValueTimer; /* setting the initial value of the timer to start counting from */
  a36:	ac e4       	ldi	r26, 0x4C	; 76
  a38:	b0 e0       	ldi	r27, 0x00	; 0
  a3a:	e9 81       	ldd	r30, Y+1	; 0x01
@@ -1792,7 +1820,7 @@ void Timer1_compareMode_OCR1B(const Timer1_compare_1B *Timer1_OCR1B_compare_Ptr)
  a42:	11 96       	adiw	r26, 0x01	; 1
  a44:	9c 93       	st	X, r25
  a46:	8e 93       	st	-X, r24
-	OCR1B = Timer1_OCR1B_compare_Ptr->valueOCR1B;
+	OCR1B = Timer1_OCR1B_compare_Ptr->valueOCR1B;        /* setting the value of OCR1B register */
  a48:	a8 e4       	ldi	r26, 0x48	; 72
  a4a:	b0 e0       	ldi	r27, 0x00	; 0
  a4c:	e9 81       	ldd	r30, Y+1	; 0x01
@@ -1823,6 +1851,7 @@ void changeTimerClock(const Timer1_configType *Timer1_configType_Ptr){
  a6c:	de b7       	in	r29, 0x3e	; 62
  a6e:	9a 83       	std	Y+2, r25	; 0x02
  a70:	89 83       	std	Y+1, r24	; 0x01
+	/* changing the frequency prescaler */
 	TCCR1B = (TCCR1B & 0b11111000)
  a72:	ae e4       	ldi	r26, 0x4E	; 78
  a74:	b0 e0       	ldi	r27, 0x00	; 0
@@ -2364,7 +2393,8 @@ static uint16 getUBRRvalue(const Uart_configType * configType_Ptr)
  d96:	de b7       	in	r29, 0x3e	; 62
  d98:	9a 83       	std	Y+2, r25	; 0x02
  d9a:	89 83       	std	Y+1, r24	; 0x01
-	if(!(configType_Ptr->mode))
+	/* regarding USART mode there is an equation to get UBRR value */
+	if(!(configType_Ptr->mode)) /* if Asynchronous mode is used */
  d9c:	e9 81       	ldd	r30, Y+1	; 0x01
  d9e:	fa 81       	ldd	r31, Y+2	; 0x02
  da0:	80 81       	ld	r24, Z
@@ -2372,7 +2402,7 @@ static uint16 getUBRRvalue(const Uart_configType * configType_Ptr)
  da4:	09 f0       	breq	.+2      	; 0xda8 <getUBRRvalue+0x1c>
  da6:	57 c0       	rjmp	.+174    	; 0xe56 <getUBRRvalue+0xca>
 	{
-		if(BIT_IS_SET(UCSRA, U2X))
+		if(BIT_IS_SET(UCSRA, U2X)) /* if double speed mode is used */
  da8:	eb e2       	ldi	r30, 0x2B	; 43
  daa:	f0 e0       	ldi	r31, 0x00	; 0
  dac:	80 81       	ld	r24, Z
@@ -2421,7 +2451,7 @@ static uint16 getUBRRvalue(const Uart_configType * configType_Ptr)
  e00:	2b 83       	std	Y+3, r18	; 0x03
  e02:	45 c0       	rjmp	.+138    	; 0xe8e <getUBRRvalue+0x102>
 			}
-		else
+		else                      /* double speed mode is not used */
 		{
 				return (((F_CPU / ((configType_Ptr->userBaudRate) * 16UL))) - 1);
  e04:	e9 81       	ldd	r30, Y+1	; 0x01
@@ -2467,7 +2497,7 @@ static uint16 getUBRRvalue(const Uart_configType * configType_Ptr)
 		}
 
 	}
-	else
+	else  /* if Synchronous mode is used */
 	{
 		return (((F_CPU / ((configType_Ptr->userBaudRate) * 2UL))) - 1);
  e56:	e9 81       	ldd	r30, Y+1	; 0x01

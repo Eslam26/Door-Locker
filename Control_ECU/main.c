@@ -1,9 +1,9 @@
-/*
- * main.c
- *
- *  Created on: Oct 4, 2019
- *      Author: eslamelnaggar
- */
+/************************************************************************************************************************
+ *  [FILE NAME]   :      <main.c>                                                                                       *
+ *  [AUTHOR]      :      <Eslam EL-Naggar>                                                                              *
+ *  [DATE CREATED]:      <Oct 4, 2019>                                                                                  *
+ *  [Description} :      <Source file for the CONTROL_ECU>                                                                  *
+ ************************************************************************************************************************/
 
 /*------------------------------------------------------INCLUDES-------------------------------------------------------------------------*/
 #include "micro_config.h"
@@ -37,7 +37,6 @@
 #define MOTOR_EN 3                                       /* defines which pin that the enable pin of the motor is connected to */
 #define NULL_Ptr ((void*)0)
 #define ZERO 0                                           /* defines 0 number
-
 /*------------------------------------------------FUNCTIONS DECLARATIONS------------------------------------------------------------------*/
 
 uint8 recieveData(void);                                 /* declaration of the function that recieve data from HMI_ECU */

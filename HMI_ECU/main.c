@@ -1,17 +1,17 @@
-/*
- * main.c
- *
- *  Created on: Oct 4, 2019
- *      Author: eslamelnaggar
- */
+/************************************************************************************************************************
+ *  [FILE NAME]   :      <main.c>                                                                                       *
+ *  [AUTHOR]      :      <Eslam EL-Naggar>                                                                              *
+ *  [DATE CREATED]:      <Oct 4, 2019>                                                                                  *
+ *  [Description} :      <Source file for the HMI_ECU>                                                                  *
+ ************************************************************************************************************************/
 
-/*------------------------------------------------------INCLUDES-------------------------------------------------------------------------*/
+/*------------------------------------------------------INCLUDES--------------------------------------------------------*/
 #include "micro_config.h"
 #include "uart.h"
 #include "keypad.h"
 #include "lcd.h"
 
-/*---------------------------------------------------DEFINITIONS--------------------------------------------------------------------------*/
+/*---------------------------------------------------DEFINITIONS--------------------------------------------------------*/
 #define ECU_READY 0x11                                   /* defines Ready Signal */
 #define PASSWORD_COMMAND  0x01                           /* defines Password Request Signal */
 #define PASSWORD_CONFIRMATION_COMMAND 0x02               /* defines Password Confirmation Request Signal */
@@ -286,6 +286,7 @@ void getRequestScreen(void) {
 	LCD_goToRowColumn(ROW_1, COL_0);
 	LCD_displayString(SECOND_REQUEST_MESSAGE);
 	key = keyPad_getPressedKey();
+	_delay_ms(MILLI_SEC_400);
 	if (key == '+') {
 		g_stepSelector = getPasswordScreen_FUN_INDEX;
 		g_switchRequest = 1;
@@ -351,5 +352,3 @@ void sendData(uint8 data) {
 	while (UART_recieveByte() != ECU_READY)
 		;
 }
-
-

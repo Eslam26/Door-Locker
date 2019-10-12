@@ -1,4 +1,4 @@
-03:20:56 **** Incremental Build of configuration Debug for project Control_ECU ****
+00:15:16 **** Incremental Build of configuration Debug for project Control_ECU ****
 make all 
 Invoking: Print Size
 avr-size --format=avr --mcu=atmega16 Control_ECU.elf

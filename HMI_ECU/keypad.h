@@ -2,7 +2,7 @@
  *  [FILE NAME]   :      <keypad.h>                                                                    *
  *  [AUTHOR]      :      <Eslam EL-Naggar>                                                             *
  *  [DATE CREATED]:      <Oct 4, 2019>                                                                 *
- *  [Description} :      <header file for KeyPad Driver                                                *
+ *  [Description} :      <header file for KeyPad Driver>                                               *
  ******************************************************************************************************/
 
 

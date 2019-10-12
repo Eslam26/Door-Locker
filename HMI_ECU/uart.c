@@ -17,6 +17,10 @@ static uint16 getUBRRvalue(const Uart_configType * configType_Ptr);
 /*----------------------------------------------------------------------------------------------------
  [Function Name]:  UART_init
  [Description]  :  This function is responsible for initializing UART
+ [Args]
+ [in]           :  const Uart_configType * configType_Ptr
+ 	 	 	 	 	 	 this arg shall indictaes the address of the structure that contains
+ 	 	 	 	 	 	 the initial parameters to intialize the USART driver
  [Returns]      :  This function returns void
  ----------------------------------------------------------------------------------------------------*/
 
@@ -161,19 +165,20 @@ void UART_recieveString(uint8 * a_string)
   ----------------------------------------------------------------------------------------------------*/
 static uint16 getUBRRvalue(const Uart_configType * configType_Ptr)
 {
-	if(!(configType_Ptr->mode))
+	/* regarding USART mode there is an equation to get UBRR value */
+	if(!(configType_Ptr->mode)) /* if Asynchronous mode is used */
 	{
-		if(BIT_IS_SET(UCSRA, U2X))
+		if(BIT_IS_SET(UCSRA, U2X)) /* if double speed mode is used */
 			{
 				return (((F_CPU / ((configType_Ptr->userBaudRate) * 8UL))) - 1);
 			}
-		else
+		else                      /* double speed mode is not used */
 		{
 				return (((F_CPU / ((configType_Ptr->userBaudRate) * 16UL))) - 1);
 		}
 
 	}
-	else
+	else  /* if Synchronous mode is used */
 	{
 		return (((F_CPU / ((configType_Ptr->userBaudRate) * 2UL))) - 1);
 	}

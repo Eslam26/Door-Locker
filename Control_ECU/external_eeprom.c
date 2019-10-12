@@ -1,14 +1,9 @@
- /******************************************************************************
- *
- * Module: External EEPROM
- *
- * File Name: external_eeprom.c
- *
- * Description: Source file for the External EEPROM Memory
- *
- * Author: Mohamed Tarek
- *
- *******************************************************************************/
+/*******************************************************************************************************
+ *  [FILE NAME]   :      <external_eeprom.c>                                                           *
+ *  [AUTHOR]      :      <Eslam EL-Naggar>                                                             *
+ *  [DATE CREATED]:      <Oct 4, 2019>                                                                 *
+ *  [Description} :      <Source file for EEPROM>                                                      *
+ ******************************************************************************************************/
 
 /*--------------------------------------INCLUDES--------------------------------------------------------*/
 #include "i2c.h"              /* include the header file for the TWI driver */

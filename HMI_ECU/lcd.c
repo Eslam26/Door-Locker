@@ -1,20 +1,20 @@
- /******************************************************************************
- *
- * Module: LCD
- *
- * File Name: lcd.c
- *
- * Description: Source file for the LCD driver
- *
- * Author: Mohamed Tarek
- *
- *******************************************************************************/
+/*******************************************************************************************************
+ *  [FILE NAME]   :      <lcd.c>                                                                       *
+ *  [AUTHOR]      :      <Eslam EL-Naggar>                                                             *
+ *  [DATE CREATED]:      <Oct 4, 2019>                                                                 *
+ *  [Description} :      <Source file for LCD Driver>                                                  *
+ ******************************************************************************************************/
 
-#include "lcd.h"
+#include "lcd.h" /* include the header file of LCD Driver */
 
-/*******************************************************************************
- *                      Functions Definitions                                  *
- *******************************************************************************/
+/*------------------------------------ Functions Definitions------------------------------------------*/
+
+/*----------------------------------------------------------------------------------------------------
+ [Function Name]:  LCD_init
+ [Description]  :  This function is responsible for initializing LCD Driver
+ [Returns]      :  This function returns void
+ ----------------------------------------------------------------------------------------------------*/
+
 void LCD_init(void)
 {
 	LCD_CTRL_PORT_DIR |= (1<<E) | (1<<RS) | (1<<RW); /* Configure the control pins(E,RS,RW) as output pins */
@@ -36,7 +36,16 @@ void LCD_init(void)
 	LCD_sendCommand(CLEAR_COMMAND); /* clear LCD at the beginning */
 }
 
-void LCD_sendCommand(uint8 command)
+/*----------------------------------------------------------------------------------------------------
+ [Function Name]:  LCD_sendCommand
+ [Description]  :  This function is responsible for sending command to LCD
+ [Args]
+ [In]           :  uint8 a_command
+ 	 	 	 	 	 This arg shall indicates the value of the command that should be sent to LCD
+ [Returns]      :  This function returns void
+ ----------------------------------------------------------------------------------------------------*/
+
+void LCD_sendCommand(uint8 a_command)
 {
 	CLEAR_BIT(LCD_CTRL_PORT,RS); /* Instruction Mode RS=0 */
 	CLEAR_BIT(LCD_CTRL_PORT,RW); /* write data to LCD so RW=0 */
@@ -46,9 +55,9 @@ void LCD_sendCommand(uint8 command)
 #if (DATA_BITS_MODE == 4)
 	/* out the highest 4 bits of the required command to the data bus D4 --> D7 */
 #ifdef UPPER_PORT_PINS
-	LCD_DATA_PORT = (LCD_DATA_PORT & 0x0F) | (command & 0xF0);
+	LCD_DATA_PORT = (LCD_DATA_PORT & 0x0F) | (a_command & 0xF0);
 #else
-	LCD_DATA_PORT = (LCD_DATA_PORT & 0xF0) | ((command & 0xF0) >> 4);
+	LCD_DATA_PORT = (LCD_DATA_PORT & 0xF0) | ((a_command & 0xF0) >> 4);
 #endif
 
 	_delay_ms(1); /* delay for processing Tdsw = 100ns */
@@ -59,23 +68,32 @@ void LCD_sendCommand(uint8 command)
 
 	/* out the lowest 4 bits of the required command to the data bus D4 --> D7 */
 #ifdef UPPER_PORT_PINS
-	LCD_DATA_PORT = (LCD_DATA_PORT & 0x0F) | ((command & 0x0F) << 4);
+	LCD_DATA_PORT = (LCD_DATA_PORT & 0x0F) | ((a_command & 0x0F) << 4);
 #else
-	LCD_DATA_PORT = (LCD_DATA_PORT & 0xF0) | (command & 0x0F);
+	LCD_DATA_PORT = (LCD_DATA_PORT & 0xF0) | (a_command & 0x0F);
 #endif
 
 	_delay_ms(1); /* delay for processing Tdsw = 100ns */
 	CLEAR_BIT(LCD_CTRL_PORT,E); /* disable LCD E=0 */
 	_delay_ms(1); /* delay for processing Th = 13ns */
 #elif (DATA_BITS_MODE == 8)
-	LCD_DATA_PORT = command; /* out the required command to the data bus D0 --> D7 */
+	LCD_DATA_PORT = a_command; /* out the required command to the data bus D0 --> D7 */
 	_delay_ms(1); /* delay for processing Tdsw = 100ns */
 	CLEAR_BIT(LCD_CTRL_PORT,E); /* disable LCD E=0 */
 	_delay_ms(1); /* delay for processing Th = 13ns */
 #endif
 }
 
-void LCD_displayCharacter(uint8 data)
+/*----------------------------------------------------------------------------------------------------
+ [Function Name]:  LCD_displayCharacter
+ [Description]  :  This function is responsible for displaying character on LCD
+ [Args]
+ [In]           :  uint8 a_command
+ 	 	 	 	 	 This arg shall indicates the value of the data that should be sent to LCD
+ [Returns]      :  This function returns void
+ ----------------------------------------------------------------------------------------------------*/
+
+void LCD_displayCharacter(uint8 a_data)
 {
 	SET_BIT(LCD_CTRL_PORT,RS); /* Data Mode RS=1 */
 	CLEAR_BIT(LCD_CTRL_PORT,RW); /* write data to LCD so RW=0 */
@@ -85,9 +103,9 @@ void LCD_displayCharacter(uint8 data)
 #if (DATA_BITS_MODE == 4)
 	/* out the highest 4 bits of the required data to the data bus D4 --> D7 */
 #ifdef UPPER_PORT_PINS
-	LCD_DATA_PORT = (LCD_DATA_PORT & 0x0F) | (data & 0xF0);
+	LCD_DATA_PORT = (LCD_DATA_PORT & 0x0F) | (a_data & 0xF0);
 #else
-	LCD_DATA_PORT = (LCD_DATA_PORT & 0xF0) | ((data & 0xF0) >> 4);
+	LCD_DATA_PORT = (LCD_DATA_PORT & 0xF0) | ((a_data & 0xF0) >> 4);
 #endif
 
 	_delay_ms(1); /* delay for processing Tdsw = 100ns */
@@ -98,21 +116,27 @@ void LCD_displayCharacter(uint8 data)
 
 	/* out the lowest 4 bits of the required data to the data bus D4 --> D7 */
 #ifdef UPPER_PORT_PINS
-	LCD_DATA_PORT = (LCD_DATA_PORT & 0x0F) | ((data & 0x0F) << 4);
+	LCD_DATA_PORT = (LCD_DATA_PORT & 0x0F) | ((a_data & 0x0F) << 4);
 #else
-	LCD_DATA_PORT = (LCD_DATA_PORT & 0xF0) | (data & 0x0F);
+	LCD_DATA_PORT = (LCD_DATA_PORT & 0xF0) | (a_data & 0x0F);
 #endif
 
 	_delay_ms(1); /* delay for processing Tdsw = 100ns */
 	CLEAR_BIT(LCD_CTRL_PORT,E); /* disable LCD E=0 */
 	_delay_ms(1); /* delay for processing Th = 13ns */
 #elif (DATA_BITS_MODE == 8)
-	LCD_DATA_PORT = data; /* out the required command to the data bus D0 --> D7 */
+	LCD_DATA_PORT = a_data; /* out the required command to the data bus D0 --> D7 */
 	_delay_ms(1); /* delay for processing Tdsw = 100ns */
 	CLEAR_BIT(LCD_CTRL_PORT,E); /* disable LCD E=0 */
 	_delay_ms(1); /* delay for processing Th = 13ns */
 #endif
 }
+
+/*----------------------------------------------------------------------------------------------------
+ [Function Name]:  LCD_displayString
+ [Description]  :  This function is responsible for displaying string
+ [Returns]      :  This function returns void
+ ----------------------------------------------------------------------------------------------------*/
 
 void LCD_displayString(const char *Str)
 {
@@ -122,14 +146,13 @@ void LCD_displayString(const char *Str)
 		LCD_displayCharacter(Str[i]);
 		i++;
 	}
-	/***************** Another Method ***********************
-	while((*Str) != '\0')
-	{
-		LCD_displayCharacter(*Str);
-		Str++;
-	}
-	*********************************************************/
+
 }
+/*----------------------------------------------------------------------------------------------------
+ [Function Name]:  LCD_goToRowColumn
+ [Description]  :  This function is responsible for moving curosr to specific location
+ [Returns]      :  This function returns void
+ ----------------------------------------------------------------------------------------------------*/
 
 void LCD_goToRowColumn(uint8 row,uint8 col)
 {
@@ -151,16 +174,27 @@ void LCD_goToRowColumn(uint8 row,uint8 col)
 				Address=col+0x50;
 				break;
 	}
-	/* to write to a specific address in the LCD
-	 * we need to apply the corresponding command 0b10000000+Address */
+	/* to write to a specific address in the LCD */
 	LCD_sendCommand(Address | SET_CURSOR_LOCATION);
 }
+
+/*----------------------------------------------------------------------------------------------------
+ [Function Name]:  LCD_displayStringRowColumn
+ [Description]  :  This function is responsible for displaying string from specific location
+ [Returns]      :  This function returns void
+ ----------------------------------------------------------------------------------------------------*/
 
 void LCD_displayStringRowColumn(uint8 row,uint8 col,const char *Str)
 {
 	LCD_goToRowColumn(row,col); /* go to to the required LCD position */
 	LCD_displayString(Str); /* display the string */
 }
+
+/*----------------------------------------------------------------------------------------------------
+ [Function Name]:  LCD_intgerToString
+ [Description]  :  This function is responsible for displaying integer values
+ [Returns]      :  This function returns void
+ ----------------------------------------------------------------------------------------------------*/
 
 void LCD_intgerToString(int data)
 {
@@ -169,7 +203,13 @@ void LCD_intgerToString(int data)
    LCD_displayString(buff);
 }
 
-void LCD_clearScreen(void)
-{
+/*----------------------------------------------------------------------------------------------------
+ [Function Name]:  LCD_clearScreen
+ [Description]  :  This function is responsible for clearing screen
+ [Returns]      :  This function returns void
+ ----------------------------------------------------------------------------------------------------*/
+
+
+void LCD_clearScreen(void){
 	LCD_sendCommand(CLEAR_COMMAND); //clear display
 }

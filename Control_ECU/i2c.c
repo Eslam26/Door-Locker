@@ -2,7 +2,7 @@
  *  [FILE NAME]   :      <i2c.c>                                                                       *
  *  [AUTHOR]      :      <Ecslam EL-Naggar>                                                            *
  *  [DATE CREATED]:      <Oct 4, 2019>                                                                 *
- *  [Description} :      <Source file for the TWI Driver                                               *
+ *  [Description} :      <Source file for the TWI Driver>                                              *
  ******************************************************************************************************/
 
 
@@ -24,10 +24,14 @@
 
 void TWI_init(const I2C_configType * configType_Ptr)
 {
-	TWSR = configType_Ptr->prescaler;
-	TWBR = configType_Ptr->valueTWBR;
+
+	TWSR = configType_Ptr->prescaler; /* adjust frequency prescaler */
+  	TWBR = configType_Ptr->valueTWBR; /* writing the value of TWBR  */
+  	/* setting the device address in the most 7 significiant bits */
 	TWAR = (TWAR & 0b00000001) | (((configType_Ptr->address)<<1) & 0b11111110);
+	/* setting up the general Call Recognition mode */
 	TWAR = (TWAR & 0b11111110) | ((configType_Ptr->generalCallRecognition & 0b00000001)<<TWGCE);
+	/* enabling TWI driver */
 	TWCR = (1<<TWEN);
 }
 
@@ -39,7 +43,12 @@ void TWI_init(const I2C_configType * configType_Ptr)
 
 void TWI_start(void)
 {
+	/*
+	 * clear TWI Interrupt flag before TWI starts a new job and
+	 * set start bit and enable TWI driver
+	 */
 	TWCR = (1 << TWINT) | (1 << TWSTA) | (1 << TWEN);
+	/* Wait for TWINT flag set in TWCR Register(start bit is sent successfully) */
 	while(BIT_IS_CLEAR(TWCR,TWINT));
 }
 

@@ -1,16 +1,16 @@
-/*******************************************************************************************************
- *  [FILE NAME]   :      <timer0.c>                                                                    *
- *  [AUTHOR]      :      <Eslam EL-Naggar>                                                             *
- *  [DATE CREATED]:      <Oct 8, 2019>                                                                 *
- *  [Description} :      <Source file for atmega16 Timer 1                                             *
- ******************************************************************************************************/
+/*********************************************************************************************************
+ *  [FILE NAME]   :      <timer0.c>                                                                      *
+ *  [AUTHOR]      :      <Eslam EL-Naggar>                                                               *
+ *  [DATE CREATED]:      <Oct 8, 2019>                                                                   *
+ *  [Description} :      <Source file for atmega16 Timer 1>                                              *
+ ********************************************************************************************************/
 /*--------------------------------------INCLUDES--------------------------------------------------------*/
 #include "timer1.h" /*include Timer 1 header file */
 #define NULL_PTR ((void*)0)
 /*------------------------------------Global Variables--------------------------------------------------*/
 static volatile void (*g_callBackPtr)(void) = NULL_PTR;
 
-/*------------------------------------FUNCTIONS DEFINITIONS-------------------------------------------*/
+/*------------------------------------FUNCTIONS DEFINITIONS---------------------------------------------*/
 /* ISR for Normal overflow mode Interrupt */
 ISR(TIMER1_OVF_vect) {
 	if (g_callBackPtr != NULL_PTR) {
@@ -42,14 +42,25 @@ ISR(TIMER1_COMPB_vect) {
  ----------------------------------------------------------------------------------------------------*/
 
 void Timer1_init(const Timer1_configType *Timer1_configType_Ptr) {
+	/* enabling global interrupt flag */
 	SREG = (1<<7);
+
+	/* setting these bits by 1 in non PWM modes */
 	TCCR1A = (1 << FOC1A) | (1 << FOC1B);
+
+	/* setting Timer 1 mode of operation */
 	TCCR1A = (TCCR1A & 0b11111100)
 			| ((Timer1_configType_Ptr->mode & 0b00000011) << (WGM10));
+
+	/* setting Timer 1 mode of operation */
 	TCCR1B = (TCCR1B & 0b11100111)
 			| (((Timer1_configType_Ptr->mode & 0b00001100) >> 2) << (WGM12));
+
+	/* setting the frequency Prescaler */
 	TCCR1B = (TCCR1B & 0b11111000)
 			| ((Timer1_configType_Ptr->clock & 0b00000111) << (CS10));
+
+	/* setting the value of ICR1 Register */
 	ICR1 = Timer1_configType_Ptr->valueICR1;
 }
 
@@ -77,8 +88,14 @@ void Timer1_normalMode(uint16 initialValueTimer) {
  ----------------------------------------------------------------------------------------------------*/
 void Timer1_compareMode_OCR1A(const Timer1_compare_1A *Timer1_OCR1A_compare_Ptr) {
 	TIMSK = (1<<OCIE1A);  /* enable compare A Interrupt */
+
+	/* adjust compare output mode  for OC1A */
 	TCCR1A = (TCCR1A & 0b00111111) | ((Timer1_OCR1A_compare_Ptr->compareMode_OC1A & 0b00000011)<< (COM1A0));
+
+	/* setting the initial value of the timer to start counting from */
 	TCNT1 = Timer1_OCR1A_compare_Ptr->initialValueTimer;
+
+	/* setting the value of OCR1B register */
 	OCR1A = Timer1_OCR1A_compare_Ptr->valueOCR1A;
 
 }
@@ -94,9 +111,11 @@ void Timer1_compareMode_OCR1A(const Timer1_compare_1A *Timer1_OCR1A_compare_Ptr)
  ----------------------------------------------------------------------------------------------------*/
 void Timer1_compareMode_OCR1B(const Timer1_compare_1B *Timer1_OCR1B_compare_Ptr) {
 	TIMSK = (1<<OCIE1B); /* enable compare A Interrupt */
+
+	/* adjust compare output mode  for OC1B */
 	TCCR1A = (TCCR1A & 0b11001111) | ((Timer1_OCR1B_compare_Ptr->compareMode_OC1B & 0b00000011)<< (COM1B0));
-	TCNT1 = Timer1_OCR1B_compare_Ptr->initialValueTimer;
-	OCR1B = Timer1_OCR1B_compare_Ptr->valueOCR1B;
+	TCNT1 = Timer1_OCR1B_compare_Ptr->initialValueTimer; /* setting the initial value of the timer to start counting from */
+	OCR1B = Timer1_OCR1B_compare_Ptr->valueOCR1B;        /* setting the value of OCR1B register */
 }
 
 /*----------------------------------------------------------------------------------------------------
@@ -109,6 +128,7 @@ void Timer1_compareMode_OCR1B(const Timer1_compare_1B *Timer1_OCR1B_compare_Ptr)
  [Returns]      :  This function returns void
  ----------------------------------------------------------------------------------------------------*/
 void changeTimerClock(const Timer1_configType *Timer1_configType_Ptr){
+	/* changing the frequency prescaler */
 	TCCR1B = (TCCR1B & 0b11111000)
 				| ((Timer1_configType_Ptr->clock & 0b00000111) << (CS10));
 }
