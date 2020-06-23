@@ -4,25 +4,34 @@
 
 # Add inputs and outputs from these tool invocations to the build variables 
 C_SRCS += \
+../GPT.c \
+../GPT_PBcfg.c \
+../TWI.c \
+../TWI_PBcfg.c \
+../USART.c \
+../USART_PBcfg.c \
 ../external_eeprom.c \
-../i2c.c \
-../main.c \
-../timer1.c \
-../uart.c 
+../main.c 
 
 OBJS += \
+./GPT.o \
+./GPT_PBcfg.o \
+./TWI.o \
+./TWI_PBcfg.o \
+./USART.o \
+./USART_PBcfg.o \
 ./external_eeprom.o \
-./i2c.o \
-./main.o \
-./timer1.o \
-./uart.o 
+./main.o 
 
 C_DEPS += \
+./GPT.d \
+./GPT_PBcfg.d \
+./TWI.d \
+./TWI_PBcfg.d \
+./USART.d \
+./USART_PBcfg.d \
 ./external_eeprom.d \
-./i2c.d \
-./main.d \
-./timer1.d \
-./uart.d 
+./main.d 
 
 
 # Each subdirectory must supply rules for building sources it contributes

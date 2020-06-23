@@ -1,11 +1,12 @@
 /*******************************************************************************************************
- *  [FILE NAME]   :      <lcd.c>                                                                       *
+ *  [MODULE]      :      <LCD>                                                                         *
+ *  [FILE NAME]   :      <LCD.c>                                                                       *
  *  [AUTHOR]      :      <Eslam EL-Naggar>                                                             *
- *  [DATE CREATED]:      <Oct 4, 2019>                                                                 *
- *  [Description} :      <Source file for LCD Driver>                                                  *
+ *  [DATE CREATED]:      <Dec 5, 2019>                                                                 *
+ *  [Description} :      <Source file for the ATmega16 LCD driver>                                     *
  ******************************************************************************************************/
 
-#include "lcd.h" /* include the header file of LCD Driver */
+#include "LCD.h" /* include the header file of LCD Driver */
 
 /*------------------------------------ Functions Definitions------------------------------------------*/
 
@@ -25,8 +26,8 @@ void LCD_init(void)
 		#else
 			LCD_DATA_PORT_DIR |= 0x0F; /* Configure the lowest 4 bits of the data port as output pins */
 		#endif
-		LCD_sendCommand(FOUR_BITS_DATA_MODE); /* initialize LCD in 4-bit mode */
-		LCD_sendCommand(TWO_LINE_LCD_Four_BIT_MODE); /* use 2-line lcd + 4-bit Data Mode + 5*7 dot display Mode */
+		LCD_sendCommand(FOUR_BITS_DATA_MODE); /* Setting LCD in 4-bit mode */
+		LCD_sendCommand(TWO_LINE_LCD_Four_BIT_MODE); /* use 2-line LCD + 4-bit Data Mode + 5*7 dot display Mode */
 	#elif (DATA_BITS_MODE == 8)
 		LCD_DATA_PORT_DIR = 0xFF; /* Configure the data port as output port */
 		LCD_sendCommand(TWO_LINE_LCD_Eight_BIT_MODE); /* use 2-line lcd + 8-bit Data Mode + 5*7 dot display Mode */
@@ -39,19 +40,16 @@ void LCD_init(void)
 /*----------------------------------------------------------------------------------------------------
  [Function Name]:  LCD_sendCommand
  [Description]  :  This function is responsible for sending command to LCD
- [Args]
- [In]           :  uint8 a_command
- 	 	 	 	 	 This arg shall indicates the value of the command that should be sent to LCD
  [Returns]      :  This function returns void
  ----------------------------------------------------------------------------------------------------*/
 
 void LCD_sendCommand(uint8 a_command)
 {
 	CLEAR_BIT(LCD_CTRL_PORT,RS); /* Instruction Mode RS=0 */
-	CLEAR_BIT(LCD_CTRL_PORT,RW); /* write data to LCD so RW=0 */
-	_delay_ms(1); /* delay for processing Tas = 50ns */
-	SET_BIT(LCD_CTRL_PORT,E); /* Enable LCD E=1 */
-	_delay_ms(1); /* delay for processing Tpw - Tdws = 190ns */
+	CLEAR_BIT(LCD_CTRL_PORT,RW); /* Clearing RW pin to write data to LCD*/
+	_delay_ms(1); /* delay for processing */
+	SET_BIT(LCD_CTRL_PORT,E); /* Enable LCD */
+	_delay_ms(1); /* delay for processing */
 #if (DATA_BITS_MODE == 4)
 	/* out the highest 4 bits of the required command to the data bus D4 --> D7 */
 #ifdef UPPER_PORT_PINS
@@ -60,11 +58,11 @@ void LCD_sendCommand(uint8 a_command)
 	LCD_DATA_PORT = (LCD_DATA_PORT & 0xF0) | ((a_command & 0xF0) >> 4);
 #endif
 
-	_delay_ms(1); /* delay for processing Tdsw = 100ns */
-	CLEAR_BIT(LCD_CTRL_PORT,E); /* disable LCD E=0 */
-	_delay_ms(1); /* delay for processing Th = 13ns */
-	SET_BIT(LCD_CTRL_PORT,E); /* Enable LCD E=1 */
-	_delay_ms(1); /* delay for processing Tpw - Tdws = 190ns */
+	_delay_ms(1); /* delay for processing */
+	CLEAR_BIT(LCD_CTRL_PORT,E); /* disable LCD */
+	_delay_ms(1); /* delay for processing */
+	SET_BIT(LCD_CTRL_PORT,E); /* Enable LCD  */
+	_delay_ms(1); /* delay for processing */
 
 	/* out the lowest 4 bits of the required command to the data bus D4 --> D7 */
 #ifdef UPPER_PORT_PINS
@@ -73,33 +71,35 @@ void LCD_sendCommand(uint8 a_command)
 	LCD_DATA_PORT = (LCD_DATA_PORT & 0xF0) | (a_command & 0x0F);
 #endif
 
-	_delay_ms(1); /* delay for processing Tdsw = 100ns */
-	CLEAR_BIT(LCD_CTRL_PORT,E); /* disable LCD E=0 */
-	_delay_ms(1); /* delay for processing Th = 13ns */
+	_delay_ms(1); /* delay for processing  */
+	CLEAR_BIT(LCD_CTRL_PORT,E); /* disable LCD */
+	_delay_ms(1); /* delay for processing */
 #elif (DATA_BITS_MODE == 8)
 	LCD_DATA_PORT = a_command; /* out the required command to the data bus D0 --> D7 */
-	_delay_ms(1); /* delay for processing Tdsw = 100ns */
-	CLEAR_BIT(LCD_CTRL_PORT,E); /* disable LCD E=0 */
-	_delay_ms(1); /* delay for processing Th = 13ns */
+	_delay_ms(1); /* delay for processing */
+	CLEAR_BIT(LCD_CTRL_PORT,E); /* disable LCD */
+	_delay_ms(1); /* delay for processing */
 #endif
 }
 
 /*----------------------------------------------------------------------------------------------------
  [Function Name]:  LCD_displayCharacter
  [Description]  :  This function is responsible for displaying character on LCD
- [Args]
- [In]           :  uint8 a_command
- 	 	 	 	 	 This arg shall indicates the value of the data that should be sent to LCD
  [Returns]      :  This function returns void
  ----------------------------------------------------------------------------------------------------*/
 
 void LCD_displayCharacter(uint8 a_data)
 {
-	SET_BIT(LCD_CTRL_PORT,RS); /* Data Mode RS=1 */
-	CLEAR_BIT(LCD_CTRL_PORT,RW); /* write data to LCD so RW=0 */
-	_delay_ms(1); /* delay for processing Tas = 50ns */
-	SET_BIT(LCD_CTRL_PORT,E); /* Enable LCD E=1 */
-	_delay_ms(1); /* delay for processing Tpw - Tdws = 190ns */
+	/* Data Mode RS=1 */
+	SET_BIT(LCD_CTRL_PORT,RS);
+	/* Clearing RW pin to write data to LCD */
+	CLEAR_BIT(LCD_CTRL_PORT,RW);
+	/* delay for processing */
+	_delay_ms(1);
+	/* Enable LCD */
+	SET_BIT(LCD_CTRL_PORT,E);
+	/* delay for processing  */
+	_delay_ms(1);
 #if (DATA_BITS_MODE == 4)
 	/* out the highest 4 bits of the required data to the data bus D4 --> D7 */
 #ifdef UPPER_PORT_PINS
@@ -108,11 +108,16 @@ void LCD_displayCharacter(uint8 a_data)
 	LCD_DATA_PORT = (LCD_DATA_PORT & 0xF0) | ((a_data & 0xF0) >> 4);
 #endif
 
-	_delay_ms(1); /* delay for processing Tdsw = 100ns */
-	CLEAR_BIT(LCD_CTRL_PORT,E); /* disable LCD E=0 */
-	_delay_ms(1); /* delay for processing Th = 13ns */
-	SET_BIT(LCD_CTRL_PORT,E); /* Enable LCD E=1 */
-	_delay_ms(1); /* delay for processing Tpw - Tdws = 190ns */
+	/* delay for processing  */
+	_delay_ms(1);
+	 /* disable LCD */
+	CLEAR_BIT(LCD_CTRL_PORT,E);
+	/* delay for processing */
+	_delay_ms(1);
+	/* Enable LCD */
+	SET_BIT(LCD_CTRL_PORT,E);
+	/* delay for processing */
+	_delay_ms(1);
 
 	/* out the lowest 4 bits of the required data to the data bus D4 --> D7 */
 #ifdef UPPER_PORT_PINS
@@ -121,14 +126,20 @@ void LCD_displayCharacter(uint8 a_data)
 	LCD_DATA_PORT = (LCD_DATA_PORT & 0xF0) | (a_data & 0x0F);
 #endif
 
-	_delay_ms(1); /* delay for processing Tdsw = 100ns */
-	CLEAR_BIT(LCD_CTRL_PORT,E); /* disable LCD E=0 */
-	_delay_ms(1); /* delay for processing Th = 13ns */
+	/* delay for processing */
+	_delay_ms(1);
+	/* disable LCD */
+	CLEAR_BIT(LCD_CTRL_PORT,E);
+	/* delay for processing */
+	_delay_ms(1);
 #elif (DATA_BITS_MODE == 8)
 	LCD_DATA_PORT = a_data; /* out the required command to the data bus D0 --> D7 */
-	_delay_ms(1); /* delay for processing Tdsw = 100ns */
-	CLEAR_BIT(LCD_CTRL_PORT,E); /* disable LCD E=0 */
-	_delay_ms(1); /* delay for processing Th = 13ns */
+	/* delay for processing  */
+	_delay_ms(1);
+	 /* disable LCD */
+	CLEAR_BIT(LCD_CTRL_PORT,E);
+	/* delay for processing */
+	_delay_ms(1);
 #endif
 }
 
@@ -141,8 +152,10 @@ void LCD_displayCharacter(uint8 a_data)
 void LCD_displayString(const char *Str)
 {
 	uint8 i = 0;
+	/* looping until reaches to the null character element */
 	while(Str[i] != '\0')
 	{
+		/* display the current character */
 		LCD_displayCharacter(Str[i]);
 		i++;
 	}
@@ -174,7 +187,7 @@ void LCD_goToRowColumn(uint8 row,uint8 col)
 				Address=col+0x50;
 				break;
 	}
-	/* to write to a specific address in the LCD */
+	/* write the specific address in the LCD */
 	LCD_sendCommand(Address | SET_CURSOR_LOCATION);
 }
 

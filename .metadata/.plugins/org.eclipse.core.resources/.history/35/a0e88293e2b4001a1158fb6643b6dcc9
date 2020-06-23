@@ -1,0 +1,354 @@
+/************************************************************************************************************************
+ *  [FILE NAME]   :      <main.c>                                                                                       *
+ *  [AUTHOR]      :      <Eslam EL-Naggar>                                                                              *
+ *  [DATE CREATED]:      <Oct 4, 2019>                                                                                  *
+ *  [Description} :      <Source file for the HMI_ECU>                                                                  *
+ ************************************************************************************************************************/
+
+/*------------------------------------------------------INCLUDES--------------------------------------------------------*/
+#include "micro_config.h"
+#include "USART.h"
+#include "keypad.h"
+#include "lcd.h"
+
+/*---------------------------------------------------DEFINITIONS--------------------------------------------------------*/
+#define ECU_READY 0x11                                   /* defines Ready Signal */
+#define PASSWORD_COMMAND  0x01                           /* defines Password Request Signal */
+#define PASSWORD_CONFIRMATION_COMMAND 0x02               /* defines Password Confirmation Request Signal */
+#define PASSWORD_MATCH_CONFIRMATION_COMMAND 0x03         /* defines Password Match Confirmation Signal */
+#define PASSWORD_MATCH_NOT_CONFIRMATION_COMMAND 0x04     /* defines Password Not matched Confirmation Signal */
+#define PASSWORD_SCREEN_COMMAND 0x05                     /* defines Password Screen Signal */
+#define REQUEST_SCREEN_COMMAND 0x06                      /* defines Options Screen Signal */
+#define OPEN_DOOR_COMMAND 0x07                           /* defines Open Door signal */
+#define DOOR_IS_OPENNING_COMMAND 0x08                    /* defines Opening state of the door signal */
+#define DOOR_IS_LOCKING_COMMAND 0x09                     /* defines Closing state of the door signal */
+#define COMPLETE_TASK_COMMAND 0x0A                       /* defines completing task signal */
+#define ALARM_COMMAND 0x0B                               /* defines Alert Signal */
+#define GET_PASSWORD_DONE 0x0C                           /* defines state of getting saved password from EXT-EEPROM */
+#define NULL_PTR ((void*)0)
+#define PROJECT_NAME "Door Locker"
+#define WELCOME_MESSAGE "WELCOME"
+#define PASSWORD_REQUEST_MESSAGE "Please enter your password :[5]"
+#define OLD_PASSWORD_REQUEST_MESSAGE "Please enter your old password :[5] "
+#define PASSWORD_REQUEST_CONFIRMATION_MESSAGE "Please re-enter your password :[5] "
+#define NEW_PASSWORD_REQUEST_MESSAGE "Please enter your new password :[5] "
+#define PASSWORD_NOT_MATCHED_ERROR_MESSAGE "Not Matched ... "
+#define FIRST_REQUEST_MESSAGE "(+) : open the door "
+#define SECOND_REQUEST_MESSAGE "(-) : change the password"
+#define INCORRET_INPUT_MESSAGE "INCORRECT INPUT"
+#define INCORRET_PASSWORD_MESSAGE "INCORRECT PASSWORD"
+#define DOOR_IS_UNLOCKING_MESSAGE "Door is unlocking ..."
+#define DOOR_IS_LOCKING_MESSAGE "Door is locking ..."
+#define THIEF_MESSAGE "Thief !!!"
+#define MILLI_SEC_400 400
+#define MILLI_SEC_2000 2000
+#define ZERO 0
+#define ROW_0 0
+#define ROW_1 1
+#define COL_0 0
+#define COL_3 3
+#define COL_12 12
+#define COL_13 13
+#define getIntroScreen_FUN_INDEX 0
+#define getPasswordCreationScreen_FUN_INDEX 1
+#define getPasswordScreen_FUN_INDEX 2
+#define getRequestScreen_FUN_INDEX 3
+#define getOpenDoorCloseDoorScreen_FUN_INDEX 4
+#define getBuzzerScreen_FUN_INDEX 5
+
+/*------------------------------------------------FUNCTIONS DECLARATIONS------------------------------------------------------------------*/
+void getIntroScreen(void);
+void getPasswordCreationScreen(void);
+void getPasswordScreen(void);
+void getRequestScreen(void);
+void getOpenDoorCloseDoorScreen(void);
+void getBuzzerScreen(void);
+void sendData(uint8 data);
+
+/*-------------------------------------------------GLOBAL VARIABLES-----------------------------------------------------------------------*/
+uint8 volatile g_stepSelector = 0;
+uint8 volatile g_switchRequest = 0;
+uint8 g_data;
+uint8 volatile g_flag = 0;
+/* pointer to array of functions */
+void (*fun_ptr_arr[])(
+		void) = {getIntroScreen, getPasswordCreationScreen,
+			getPasswordScreen, getRequestScreen, getOpenDoorCloseDoorScreen, getBuzzerScreen
+};
+
+/*--------------------------------------------------STRUCTURES----------------------------------------------------------------------------*/
+
+int main() {
+
+
+	/*
+	 * setting the intial parameter in order to pass it to a function that intializes USART Driver
+	 */
+	Uart_configType UART_config = { Asynchronus, Disabled, _2bit, _8bit,
+			Rising_Transmitted_Falling_Recieved, OFF, multi_OFF, 9600 };
+
+	/* intializes USART Driver */
+	UART_init(&UART_config);
+	/* intializez LCD */
+	LCD_init();
+	/* clear the screen */
+	LCD_clearScreen();
+
+    /* sending to CONTROL_ECU ECU_READY signal */
+	UART_sendByte(ECU_READY);
+	/* looping until CONTROL_ECU send ECU_READY signal */
+	while (UART_recieveByte() != ECU_READY)
+		;
+	/* sending to CONTROL_ECU ECU_READY signal */
+	UART_sendByte(ECU_READY);
+	(*fun_ptr_arr[getIntroScreen_FUN_INDEX])();
+
+	while (1)
+
+	{
+		/* calling the function by using pointer to the function
+		 * each function has its own index in fun_ptr_arr
+		 */
+		(*fun_ptr_arr[g_stepSelector])();
+	}
+
+	return 0;
+
+}
+
+/*----------------------------------------------------------------------------------------------------
+ [Function Name]:  getIntroScreen
+ [Description]  :  This function is responsible for showing project name and welcome message
+ [Returns]      :  This function returns void
+ ----------------------------------------------------------------------------------------------------*/
+
+void getIntroScreen(void) {
+	LCD_clearScreen();
+	/* move the cursor to row_0, col_12 */
+	LCD_goToRowColumn(ROW_0, COL_12);
+	/* displaying project name */
+	LCD_displayString(PROJECT_NAME);
+	/* move the cursor to row_1, col_14 */
+	LCD_goToRowColumn(ROW_1, 14);
+	/* displaying welcome message */
+	LCD_displayString(WELCOME_MESSAGE);
+	/* waiting 2 seconds */
+	_delay_ms(MILLI_SEC_2000);
+	/* passing the index of the next function */
+	g_stepSelector = getPasswordCreationScreen_FUN_INDEX;
+}
+
+/*----------------------------------------------------------------------------------------------------
+ [Function Name]:  getPasswordCreationScreen
+ [Description]  :  This function is responsible for displaying password creation screen and
+ 	 	 	 	 	 	 sending the entered password to CONTROL_ECU
+ [Returns]      :  This function returns void
+ ----------------------------------------------------------------------------------------------------*/
+void getPasswordCreationScreen(void) {
+	uint8 key, flag = 1, command;
+	/* sending to CONTROL_ECU PASSWORD_COMMAND */
+	sendData(PASSWORD_COMMAND);
+	LCD_clearScreen();
+	/*
+	 * 1. checking if there is an old password or not depending from which function is called before this function being called
+	 * 2. waiting for a key to be pressed and starting to send the password to CONTROL_ECU to take descisions
+	 * 3. after entering the password two times
+	 * 4. waiting CONTROL_ECU to take descision about the confirmation of the two passwords
+	 * 5. if the two passwords do not match we will point to this function again
+	 * 6. if the two password matchd we will point to another function ( Request Screen function )
+	 */
+	if(g_flag)
+	{
+		LCD_displayString(NEW_PASSWORD_REQUEST_MESSAGE);
+		g_flag=0;
+	}
+	else
+	{
+		LCD_displayString(PASSWORD_REQUEST_MESSAGE);
+	}
+
+	LCD_goToRowColumn(ROW_1, COL_3);
+
+	do {
+		key = keyPad_getPressedKey();
+		UART_sendByte(key);
+		if (key != '=')
+			LCD_displayCharacter('*');
+		_delay_ms(MILLI_SEC_400);
+	} while (key != '=');
+	UART_sendByte(COMPLETE_TASK_COMMAND);
+
+	sendData(PASSWORD_CONFIRMATION_COMMAND);
+	LCD_clearScreen();
+	LCD_displayString(PASSWORD_REQUEST_CONFIRMATION_MESSAGE);
+	LCD_goToRowColumn(ROW_1, COL_3);
+	do {
+		key = keyPad_getPressedKey();
+		UART_sendByte(key);
+		if (key != '=')
+			LCD_displayCharacter('*');
+		_delay_ms(MILLI_SEC_400);
+	} while (key != '=');
+	UART_sendByte(COMPLETE_TASK_COMMAND);
+
+	while (flag) {
+		command = UART_recieveByte();
+		if (command == PASSWORD_MATCH_CONFIRMATION_COMMAND) {
+			g_stepSelector = getRequestScreen_FUN_INDEX;
+			flag = ZERO;
+
+		} else if (command == PASSWORD_MATCH_NOT_CONFIRMATION_COMMAND) {
+			g_stepSelector = getPasswordCreationScreen_FUN_INDEX;
+			LCD_clearScreen();
+			LCD_displayString(PASSWORD_NOT_MATCHED_ERROR_MESSAGE);
+			_delay_ms(MILLI_SEC_400);
+			flag = ZERO;
+		}
+	}
+
+}
+
+/*------------------------------------------------------------------------------------------------------------------------------
+ [Function Name]:  getPasswordScreen
+ [Description]  :  This function is responsible for requesting to enter the password in order to match with the saved password
+ [Returns]      :  This function returns void
+ ------------------------------------------------------------------------------------------------------------------------------*/
+void getPasswordScreen(void) {
+	uint8 key = ZERO;
+	uint8 flag = 1;
+	uint8 command = ZERO;
+	sendData(PASSWORD_SCREEN_COMMAND);
+	LCD_clearScreen();
+	if(g_flag)
+		{
+			LCD_displayString(OLD_PASSWORD_REQUEST_MESSAGE);
+		}
+		else
+		{
+			LCD_displayString(PASSWORD_REQUEST_MESSAGE);
+		}
+	LCD_goToRowColumn(ROW_1, COL_3);
+	while (UART_recieveByte() != GET_PASSWORD_DONE)
+		;
+	/* sending to CONTROL_ECU ECU_READY signal */
+	UART_sendByte(ECU_READY);
+	do {
+		key = keyPad_getPressedKey();
+		UART_sendByte(key);
+		if (key != '=')
+			LCD_displayCharacter('*');
+		_delay_ms(MILLI_SEC_400);
+	} while (key != '=');
+
+	UART_sendByte(COMPLETE_TASK_COMMAND);
+
+	while (flag) {
+		command = UART_recieveByte();
+		switch (command) {
+		case PASSWORD_MATCH_CONFIRMATION_COMMAND:
+
+			if (g_switchRequest) {
+				g_stepSelector = getOpenDoorCloseDoorScreen_FUN_INDEX;
+			} else {
+				g_stepSelector = getPasswordCreationScreen_FUN_INDEX;
+			}
+
+			flag = ZERO;
+			break;
+		case PASSWORD_MATCH_NOT_CONFIRMATION_COMMAND:
+			g_stepSelector = getPasswordScreen_FUN_INDEX;
+			LCD_clearScreen();
+			LCD_displayString(INCORRET_PASSWORD_MESSAGE);
+			_delay_ms(MILLI_SEC_400);
+			flag = ZERO;
+			break;
+		case ALARM_COMMAND:
+			g_stepSelector = getBuzzerScreen_FUN_INDEX;
+			flag = ZERO;
+			break;
+		default:
+			break;
+		}
+
+	}
+}
+
+/*----------------------------------------------------------------------------------------------------
+ [Function Name]:  getRequestScreen
+ [Description]  :  This function is responsible for showing the tasks that the system offers
+ [Returns]      :  This function returns void
+ ----------------------------------------------------------------------------------------------------*/
+void getRequestScreen(void) {
+	uint8 key;
+	LCD_clearScreen();
+	sendData(REQUEST_SCREEN_COMMAND);
+	LCD_displayString(FIRST_REQUEST_MESSAGE);
+	LCD_goToRowColumn(ROW_1, COL_0);
+	LCD_displayString(SECOND_REQUEST_MESSAGE);
+	key = keyPad_getPressedKey();
+	_delay_ms(MILLI_SEC_400);
+	if (key == '+') {
+		g_stepSelector = getPasswordScreen_FUN_INDEX;
+		g_switchRequest = 1;
+	} else if (key == '-') {
+		g_stepSelector = getPasswordScreen_FUN_INDEX;
+		g_switchRequest = 0;
+		g_flag = 1;
+	} else {
+		LCD_clearScreen();
+		g_stepSelector = getRequestScreen_FUN_INDEX;
+
+	}
+}
+
+/*----------------------------------------------------------------------------------------------------
+ [Function Name]:  getOpenDoorCloseDoorScreen
+ [Description]  :  This function is responsible for showing the door status when it opens and closes
+ [Returns]      :  This function returns void
+ ----------------------------------------------------------------------------------------------------*/
+void getOpenDoorCloseDoorScreen(void) {
+	LCD_clearScreen();
+	sendData(OPEN_DOOR_COMMAND);
+	while (UART_recieveByte() != DOOR_IS_OPENNING_COMMAND)
+		;
+	LCD_displayString(DOOR_IS_UNLOCKING_MESSAGE);
+	while (UART_recieveByte() != DOOR_IS_LOCKING_COMMAND);
+	LCD_clearScreen();
+	LCD_displayString(DOOR_IS_LOCKING_MESSAGE);
+	while (UART_recieveByte() != COMPLETE_TASK_COMMAND);
+	g_stepSelector = getRequestScreen_FUN_INDEX;
+}
+
+
+/*----------------------------------------------------------------------------------------------------
+ [Function Name]:  getBuzzerScreen
+ [Description]  :  This function is responsible for showing the thief message when the buzzer starts
+ [Returns]      :  This function returns void
+ ----------------------------------------------------------------------------------------------------*/
+
+void getBuzzerScreen(void) {
+	LCD_clearScreen();
+	LCD_displayString(THIEF_MESSAGE);
+	while (UART_recieveByte() != COMPLETE_TASK_COMMAND)
+		;
+	g_stepSelector = getIntroScreen_FUN_INDEX;
+}
+
+
+/*----------------------------------------------------------------------------------------------------
+ [Function Name]:  sendData
+ [Description]  :  This function is responsible for recieving the data from HMI_ECU
+ [Returns]      :  This function returns void
+ ----------------------------------------------------------------------------------------------------*/
+
+void sendData(uint8 data) {
+	/* sending to CONTROL_ECU ECU_READY signal */
+	UART_sendByte(ECU_READY);
+	/* looping until CONTROL_ECU send ECU_READY signal */
+	while (UART_recieveByte() != ECU_READY)
+		;
+	UART_sendByte(data);
+	/* looping until CONTROL_ECU send ECU_READY signal */
+	while (UART_recieveByte() != ECU_READY)
+		;
+}

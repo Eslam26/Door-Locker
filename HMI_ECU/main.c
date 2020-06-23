@@ -7,54 +7,12 @@
 
 /*------------------------------------------------------INCLUDES--------------------------------------------------------*/
 #include "micro_config.h"
-#include "uart.h"
+#include "main.h"
+#include "USART.h"
 #include "keypad.h"
-#include "lcd.h"
+#include "LCD.h"
 
-/*---------------------------------------------------DEFINITIONS--------------------------------------------------------*/
-#define ECU_READY 0x11                                   /* defines Ready Signal */
-#define PASSWORD_COMMAND  0x01                           /* defines Password Request Signal */
-#define PASSWORD_CONFIRMATION_COMMAND 0x02               /* defines Password Confirmation Request Signal */
-#define PASSWORD_MATCH_CONFIRMATION_COMMAND 0x03         /* defines Password Match Confirmation Signal */
-#define PASSWORD_MATCH_NOT_CONFIRMATION_COMMAND 0x04     /* defines Password Not matched Confirmation Signal */
-#define PASSWORD_SCREEN_COMMAND 0x05                     /* defines Password Screen Signal */
-#define REQUEST_SCREEN_COMMAND 0x06                      /* defines Options Screen Signal */
-#define OPEN_DOOR_COMMAND 0x07                           /* defines Open Door signal */
-#define DOOR_IS_OPENNING_COMMAND 0x08                    /* defines Opening state of the door signal */
-#define DOOR_IS_LOCKING_COMMAND 0x09                     /* defines Closing state of the door signal */
-#define COMPLETE_TASK_COMMAND 0x0A                       /* defines completing task signal */
-#define ALARM_COMMAND 0x0B                               /* defines Alert Signal */
-#define GET_PASSWORD_DONE 0x0C                           /* defines state of getting saved password from EXT-EEPROM */
-#define NULL_PTR ((void*)0)
-#define PROJECT_NAME "Door Locker"
-#define WELCOME_MESSAGE "WELCOME"
-#define PASSWORD_REQUEST_MESSAGE "Please enter your password :[5]"
-#define OLD_PASSWORD_REQUEST_MESSAGE "Please enter your old password :[5] "
-#define PASSWORD_REQUEST_CONFIRMATION_MESSAGE "Please re-enter your password :[5] "
-#define NEW_PASSWORD_REQUEST_MESSAGE "Please enter your new password :[5] "
-#define PASSWORD_NOT_MATCHED_ERROR_MESSAGE "Not Matched ... "
-#define FIRST_REQUEST_MESSAGE "(+) : open the door "
-#define SECOND_REQUEST_MESSAGE "(-) : change the password"
-#define INCORRET_INPUT_MESSAGE "INCORRECT INPUT"
-#define INCORRET_PASSWORD_MESSAGE "INCORRECT PASSWORD"
-#define DOOR_IS_UNLOCKING_MESSAGE "Door is unlocking ..."
-#define DOOR_IS_LOCKING_MESSAGE "Door is locking ..."
-#define THIEF_MESSAGE "Thief !!!"
-#define MILLI_SEC_400 400
-#define MILLI_SEC_2000 2000
-#define ZERO 0
-#define ROW_0 0
-#define ROW_1 1
-#define COL_0 0
-#define COL_3 3
-#define COL_12 12
-#define COL_13 13
-#define getIntroScreen_FUN_INDEX 0
-#define getPasswordCreationScreen_FUN_INDEX 1
-#define getPasswordScreen_FUN_INDEX 2
-#define getRequestScreen_FUN_INDEX 3
-#define getOpenDoorCloseDoorScreen_FUN_INDEX 4
-#define getBuzzerScreen_FUN_INDEX 5
+
 
 /*------------------------------------------------FUNCTIONS DECLARATIONS------------------------------------------------------------------*/
 void getIntroScreen(void);
@@ -81,26 +39,21 @@ void (*fun_ptr_arr[])(
 int main() {
 
 
-	/*
-	 * setting the intial parameter in order to pass it to a function that intializes USART Driver
-	 */
-	Uart_configType UART_config = { Asynchronus, Disabled, _2bit, _8bit,
-			Rising_Transmitted_Falling_Recieved, OFF, multi_OFF, 9600 };
 
-	/* intializes USART Driver */
-	UART_init(&UART_config);
-	/* intializez LCD */
+	/* Initializes USART Driver */
+	USART_init(&USART_configStructure);
+	/* Initializes LCD */
 	LCD_init();
 	/* clear the screen */
 	LCD_clearScreen();
 
     /* sending to CONTROL_ECU ECU_READY signal */
-	UART_sendByte(ECU_READY);
+	USART_sendByte(ECU_READY);
 	/* looping until CONTROL_ECU send ECU_READY signal */
-	while (UART_recieveByte() != ECU_READY)
+	while (USART_recieveByte() != ECU_READY)
 		;
 	/* sending to CONTROL_ECU ECU_READY signal */
-	UART_sendByte(ECU_READY);
+	USART_sendByte(ECU_READY);
 	(*fun_ptr_arr[getIntroScreen_FUN_INDEX])();
 
 	while (1)
@@ -171,12 +124,12 @@ void getPasswordCreationScreen(void) {
 
 	do {
 		key = keyPad_getPressedKey();
-		UART_sendByte(key);
+		USART_sendByte(key);
 		if (key != '=')
 			LCD_displayCharacter('*');
 		_delay_ms(MILLI_SEC_400);
 	} while (key != '=');
-	UART_sendByte(COMPLETE_TASK_COMMAND);
+	USART_sendByte(COMPLETE_TASK_COMMAND);
 
 	sendData(PASSWORD_CONFIRMATION_COMMAND);
 	LCD_clearScreen();
@@ -184,15 +137,15 @@ void getPasswordCreationScreen(void) {
 	LCD_goToRowColumn(ROW_1, COL_3);
 	do {
 		key = keyPad_getPressedKey();
-		UART_sendByte(key);
+		USART_sendByte(key);
 		if (key != '=')
 			LCD_displayCharacter('*');
 		_delay_ms(MILLI_SEC_400);
 	} while (key != '=');
-	UART_sendByte(COMPLETE_TASK_COMMAND);
+	USART_sendByte(COMPLETE_TASK_COMMAND);
 
 	while (flag) {
-		command = UART_recieveByte();
+		command = USART_recieveByte();
 		if (command == PASSWORD_MATCH_CONFIRMATION_COMMAND) {
 			g_stepSelector = getRequestScreen_FUN_INDEX;
 			flag = ZERO;
@@ -228,22 +181,22 @@ void getPasswordScreen(void) {
 			LCD_displayString(PASSWORD_REQUEST_MESSAGE);
 		}
 	LCD_goToRowColumn(ROW_1, COL_3);
-	while (UART_recieveByte() != GET_PASSWORD_DONE)
+	while (USART_recieveByte() != GET_PASSWORD_DONE)
 		;
 	/* sending to CONTROL_ECU ECU_READY signal */
-	UART_sendByte(ECU_READY);
+	USART_sendByte(ECU_READY);
 	do {
 		key = keyPad_getPressedKey();
-		UART_sendByte(key);
+		USART_sendByte(key);
 		if (key != '=')
 			LCD_displayCharacter('*');
 		_delay_ms(MILLI_SEC_400);
 	} while (key != '=');
 
-	UART_sendByte(COMPLETE_TASK_COMMAND);
+	USART_sendByte(COMPLETE_TASK_COMMAND);
 
 	while (flag) {
-		command = UART_recieveByte();
+		command = USART_recieveByte();
 		switch (command) {
 		case PASSWORD_MATCH_CONFIRMATION_COMMAND:
 
@@ -299,6 +252,7 @@ void getRequestScreen(void) {
 		g_stepSelector = getRequestScreen_FUN_INDEX;
 
 	}
+	_delay_ms(MILLI_SEC_400);
 }
 
 /*----------------------------------------------------------------------------------------------------
@@ -309,13 +263,13 @@ void getRequestScreen(void) {
 void getOpenDoorCloseDoorScreen(void) {
 	LCD_clearScreen();
 	sendData(OPEN_DOOR_COMMAND);
-	while (UART_recieveByte() != DOOR_IS_OPENNING_COMMAND)
+	while (USART_recieveByte() != DOOR_IS_OPENNING_COMMAND)
 		;
 	LCD_displayString(DOOR_IS_UNLOCKING_MESSAGE);
-	while (UART_recieveByte() != DOOR_IS_LOCKING_COMMAND);
+	while (USART_recieveByte() != DOOR_IS_LOCKING_COMMAND);
 	LCD_clearScreen();
 	LCD_displayString(DOOR_IS_LOCKING_MESSAGE);
-	while (UART_recieveByte() != COMPLETE_TASK_COMMAND);
+	while (USART_recieveByte() != COMPLETE_TASK_COMMAND);
 	g_stepSelector = getRequestScreen_FUN_INDEX;
 }
 
@@ -329,7 +283,7 @@ void getOpenDoorCloseDoorScreen(void) {
 void getBuzzerScreen(void) {
 	LCD_clearScreen();
 	LCD_displayString(THIEF_MESSAGE);
-	while (UART_recieveByte() != COMPLETE_TASK_COMMAND)
+	while (USART_recieveByte() != COMPLETE_TASK_COMMAND)
 		;
 	g_stepSelector = getIntroScreen_FUN_INDEX;
 }
@@ -343,12 +297,12 @@ void getBuzzerScreen(void) {
 
 void sendData(uint8 data) {
 	/* sending to CONTROL_ECU ECU_READY signal */
-	UART_sendByte(ECU_READY);
+	USART_sendByte(ECU_READY);
 	/* looping until CONTROL_ECU send ECU_READY signal */
-	while (UART_recieveByte() != ECU_READY)
+	while (USART_recieveByte() != ECU_READY)
 		;
-	UART_sendByte(data);
+	USART_sendByte(data);
 	/* looping until CONTROL_ECU send ECU_READY signal */
-	while (UART_recieveByte() != ECU_READY)
+	while (USART_recieveByte() != ECU_READY)
 		;
 }

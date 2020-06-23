@@ -1,6 +1,9 @@
-lcd.o lcd.o: ../lcd.c ../lcd.h ../std_types.h ../common_macros.h
+LCD.o LCD.o: ../LCD.c ../LCD.h ../micro_config.h ../std_types.h \
+  ../common_macros.h
 
-../lcd.h:
+../LCD.h:
+
+../micro_config.h:
 
 ../std_types.h:
 

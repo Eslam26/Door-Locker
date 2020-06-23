@@ -6,7 +6,7 @@
  ******************************************************************************************************/
 
 /*--------------------------------------INCLUDES--------------------------------------------------------*/
-#include "i2c.h"              /* include the header file for the TWI driver */
+#include "TWI.h"              /* include the header file for the TWI driver */
 #include "external_eeprom.h"  /* include the header file for the external eeprom memory */
 
 /*----------------------------------------------------------------------------------------------------
@@ -17,8 +17,7 @@
 void EEPROM_init(void)
 {
 	/* initialize the I2C(TWI) module inside the MC */
-	I2C_configType configType_ICU = {Prescaler_1, 0x02, 0x01}; /* setting the intial parameters of TWI Driver */
-	TWI_init(&configType_ICU);    /* passing the address of this structure in order to intialize the TWi Driver */
+	TWI_init(&TWI_configStructure);    /* passing the address of this structure in order to intialize the TWi Driver */
 }
 
 /*-------------------------------------------------------------------------------------------------------------------------------

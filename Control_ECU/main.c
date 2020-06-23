@@ -2,41 +2,17 @@
  *  [FILE NAME]   :      <main.c>                                                                                       *
  *  [AUTHOR]      :      <Eslam EL-Naggar>                                                                              *
  *  [DATE CREATED]:      <Oct 4, 2019>                                                                                  *
- *  [Description} :      <Source file for the CONTROL_ECU>                                                                  *
+ *  [Description} :      <Source file for the CONTROL_ECU>                                                              *
  ************************************************************************************************************************/
 
 /*------------------------------------------------------INCLUDES-------------------------------------------------------------------------*/
 #include "micro_config.h"
-#include "uart.h"
-#include "timer1.h"
+#include "main.h"
+#include "USART.h"
+#include "GPT.h"
 #include "external_eeprom.h"
 
-/*---------------------------------------------------DEFINITIONS--------------------------------------------------------------------------*/
-#define ECU_READY 0x11                                   /* defines Ready Signal */
-#define PASSWORD_COMMAND  0x01                           /* defines Password Request Signal */
-#define PASSWORD_CONFIRMATION_COMMAND 0x02               /* defines Password Confirmation Request Signal */
-#define PASSWORD_MATCH_CONFIRMATION_COMMAND 0x03         /* defines Password Match Confirmation Signal */
-#define PASSWORD_MATCH_NOT_CONFIRMATION_COMMAND 0x04     /* defines Password Not matched Confirmation Signal */
-#define PASSWORD_SCREEN_COMMAND 0x05                     /* defines Password Screen Signal */
-#define REQUEST_SCREEN_COMMAND 0x06                      /* defines Options Screen Signal */
-#define OPEN_DOOR_COMMAND 0x07                           /* defines Open Door signal */
-#define DOOR_IS_OPENNING_COMMAND 0x08                    /* defines Opening state of the door signal */
-#define DOOR_IS_LOCKING_COMMAND 0x09                     /* defines Closing state of the door signal */
-#define COMPLETE_TASK_COMMAND 0x0A                       /* defines completing task signal */
-#define ALARM_COMMAND 0x0B                               /* defines Alert Signal */
-#define GET_PASSWORD_DONE 0x0C                           /* defines state of getting saved password from EXT-EEPROM */
-#define BASE_ADDRESS_LOCATION 0x0002                     /* defines the base address location which the password has been saved in the memory */
 
-#define BUZZER_PORT_DIRECTION DDRD                       /* defines the port direction that the buzzer is being connected */
-#define BUZZER_PORT PORTD                                /* defines the port out that the buzzer is being connected */
-#define BUZZER_PIN PD2                                   /* defines which pin that the buzzer is connected to */
-#define MOTOR_PORT_DIRECTION DDRC                        /* defines the port direction that the motor is being connected */
-#define MOTOR_PORT PORTC                                 /* defines the port out that the motor is being connected */
-#define MOTOR_IN1 4                                      /* defines which pin that the first input of the motor is connected to */
-#define MOTOR_IN2 5                                      /* defines which pin that the second input of the motor is connected to */
-#define MOTOR_EN 3                                       /* defines which pin that the enable pin of the motor is connected to */
-#define NULL_Ptr ((void*)0)
-#define ZERO 0                                           /* defines 0 number
 /*------------------------------------------------FUNCTIONS DECLARATIONS------------------------------------------------------------------*/
 
 uint8 recieveData(void);                                 /* declaration of the function that recieve data from HMI_ECU */
@@ -53,16 +29,6 @@ uint8 g_password[6] = { 0 };                             /* array that stores th
 uint8 g_data;                                            /* variable to store the recieved data */
 uint8 g_counter = 0;                                     /* variable acts as seconds counter */
 uint8 g_errorCounter;                                    /* counter for incorrect password entered */
-Timer1_configType * Timer1_configType_Ptr = NULL_Ptr;
-Timer1_compare_1A * Timer1_compare_1A_configType_Ptr = NULL_Ptr;
-	/*
-	 * setting the intial parameter in order to pass it to a function that intializes Timer1 Driver
-	 */
-Timer1_configType TIMER1_configType = {CTC_OCR1A, F_CPU_256, 0};
-	/*
-	 * setting the intial parameter in order to pass it to a function that intializes compare A match output mode
-	 */
-Timer1_compare_1A Timer1_compare_1A_configType = {0, compareMode_2A, 31250};
 
 /*--------------------------------------------------STRUCTURES----------------------------------------------------------------------------*/
 
@@ -76,23 +42,19 @@ int main() {
 	SET_BIT(MOTOR_PORT_DIRECTION,MOTOR_EN);
 	SET_BIT(BUZZER_PORT_DIRECTION,BUZZER_PIN);
 
-	/*
-	 * setting the intial parameter in order to pass it to a function that intializes USART Driver
-	 */
-	Uart_configType UART_config = { Asynchronus, Disabled, _2bit, _8bit,
-				Rising_Transmitted_Falling_Recieved, 0, multi_OFF, 9600 };
+	/* Enable Global Interrupts */
+	SREG = (1<<7);
+	/* initialize GPT driver */
 
+	GPT_init(&GPT_configStructure);
+	/* set GPT_0 callBack Function */
+	GPT_1_setCallBack(calledBackFunction);
 
-	Timer1_configType_Ptr = &TIMER1_configType;
-	Timer1_compare_1A_configType_Ptr = &Timer1_compare_1A_configType;
-
-	Timer1_init(&TIMER1_configType);           /*intializes timer 1*/
-	Timer1_setCallBack(calledBackFunction);    /*passing the address of the function that will be called when timer completes its task */
-	UART_init(&UART_config);                   /*intializes USART Driver */
+	USART_init(&USART_configStructure);        /*intializes USART Driver */
 	EEPROM_init();                             /*intializes EEPROM */
-	while (UART_recieveByte() != ECU_READY);   /* waiting HMI_ECU to sent ECU_READY signal */
-	UART_sendByte(ECU_READY);
-	while (UART_recieveByte() != ECU_READY);   /* waiting HMI_ECU to sent ECU_READY si */
+	while (USART_recieveByte() != ECU_READY);   /* waiting HMI_ECU to sent ECU_READY signal */
+	USART_sendByte(ECU_READY);
+	while (USART_recieveByte() != ECU_READY);   /* waiting HMI_ECU to sent ECU_READY si */
 	while (1) {
 		g_data = recieveData();                /* recieving command from HMI_ECU */
 		switch (g_data) {                      /* switching between functions regarding the recieved command */
@@ -125,8 +87,8 @@ int main() {
 void passwordCreation(void) {
 	uint8 i = 0;
 	/* looping until HMI_ECU sends COMPLETE_TASK_COMMAND */
-	while (UART_recieveByte() != COMPLETE_TASK_COMMAND) {
-		g_password[i] = UART_recieveByte(); /* storing the sent password in g_password array */
+	while (USART_recieveByte() != COMPLETE_TASK_COMMAND) {
+		g_password[i] = USART_recieveByte(); /* storing the sent password in g_password array */
 		i++;
 	}
 }
@@ -141,8 +103,8 @@ void passwordConfirmation(void) {
 	uint8 i = 0;
 	uint8 flag = 0;
 	/* looping until HMI_ECU sends COMPLETE_TASK_COMMAND */
-	while (UART_recieveByte() != COMPLETE_TASK_COMMAND) {
-		if (g_password[i] == UART_recieveByte()) {
+	while (USART_recieveByte() != COMPLETE_TASK_COMMAND) {
+		if (g_password[i] == USART_recieveByte()) {
 
 		} else {
 			flag = 1;  /* not matched occurs */
@@ -152,7 +114,7 @@ void passwordConfirmation(void) {
 	if(flag)
 	{
 		/* send not matched command to HMI_ECU */
-		UART_sendByte(PASSWORD_MATCH_NOT_CONFIRMATION_COMMAND);
+		USART_sendByte(PASSWORD_MATCH_NOT_CONFIRMATION_COMMAND);
 
 	}
 	else
@@ -163,7 +125,7 @@ void passwordConfirmation(void) {
 		 * sending to HMI_ECU match confirmation command
 		 */
 		savePassword(g_password);
-		UART_sendByte(PASSWORD_MATCH_CONFIRMATION_COMMAND);
+		USART_sendByte(PASSWORD_MATCH_CONFIRMATION_COMMAND);
 	}
 }
 
@@ -199,13 +161,13 @@ void comparingWithSavedPassword (void)
 			EEPROM_readByte(BASE_ADDRESS_LOCATION+i,g_password_Ptr+i);
 			i++;
 		}
-	UART_sendByte(GET_PASSWORD_DONE); /* send to HMI_ECU GET_PASSWORD_DONE command */
-	while(UART_recieveByte() != ECU_READY); /* looping until HMI_ECU sends ECU_READY signal */
+	USART_sendByte(GET_PASSWORD_DONE); /* send to HMI_ECU GET_PASSWORD_DONE command */
+	while(USART_recieveByte() != ECU_READY); /* looping until HMI_ECU sends ECU_READY signal */
 	i = 0;
 		uint8 flag = 0;
 		/* looping until HMI_ECU sends COMPLETE_TASK_COMMAND */
-		while (UART_recieveByte() != COMPLETE_TASK_COMMAND) {
-			if (g_password[i] == UART_recieveByte()) {
+		while (USART_recieveByte() != COMPLETE_TASK_COMMAND) {
+			if (g_password[i] == USART_recieveByte()) {
 
 			} else {
 				flag = 1; /* Incorrect password entered */
@@ -220,17 +182,17 @@ void comparingWithSavedPassword (void)
 				/*
 				 * after 3 times incorrect password entered buzzer starts and sending to HMI_ECU ALARM_COMMAND
 				 */
-				UART_sendByte(ALARM_COMMAND);
+				USART_sendByte(ALARM_COMMAND);
 				buzzer();
 				g_errorCounter=0;
 			}
 			else{
-			UART_sendByte(PASSWORD_MATCH_NOT_CONFIRMATION_COMMAND);
+			USART_sendByte(PASSWORD_MATCH_NOT_CONFIRMATION_COMMAND);
 			}
 		}
 		else
 		{
-			UART_sendByte(PASSWORD_MATCH_CONFIRMATION_COMMAND);
+			USART_sendByte(PASSWORD_MATCH_CONFIRMATION_COMMAND);
 			savePassword(g_password);
 			g_errorCounter=0;
 		}
@@ -252,8 +214,10 @@ void openCloseDoor(void){
 	 * turning off the motor
 	 * sending to HMI_ECU COMPLETE_TASK_COMMAND
 	 */
-	Timer1_compareMode_OCR1A(&Timer1_compare_1A_configType);
-	UART_sendByte(DOOR_IS_OPENNING_COMMAND);
+
+	/* enable GPT_1 */
+	GPT_enable(1);
+	USART_sendByte(DOOR_IS_OPENNING_COMMAND);
 	SET_BIT(MOTOR_PORT,MOTOR_EN);
 	SET_BIT(MOTOR_PORT,MOTOR_IN1);
 	CLEAR_BIT(MOTOR_PORT,MOTOR_IN2);
@@ -262,12 +226,13 @@ void openCloseDoor(void){
 	g_counter = 0;
     SET_BIT(MOTOR_PORT,MOTOR_IN2);
 	CLEAR_BIT(MOTOR_PORT,MOTOR_IN1);
-	UART_sendByte(DOOR_IS_LOCKING_COMMAND);
+	USART_sendByte(DOOR_IS_LOCKING_COMMAND);
 	while(g_counter != 15);
+	GPT_disable(1);
 	CLEAR_BIT(MOTOR_PORT,MOTOR_EN);
 	CLEAR_BIT(MOTOR_PORT,MOTOR_IN1);
 	CLEAR_BIT(MOTOR_PORT,MOTOR_IN2);
-	UART_sendByte(COMPLETE_TASK_COMMAND);
+	USART_sendByte(COMPLETE_TASK_COMMAND);
 
 }
 
@@ -285,12 +250,15 @@ void buzzer(void){
 	 * turning off the buzzer
 	 * sending to HMI_ECU COMPLETE_TASK_COMMAND
 	 */
-	Timer1_compareMode_OCR1A(&Timer1_compare_1A_configType);
+
+	/* enable GPT_1 */
+	GPT_enable(1);
 	g_counter = 0;
 	SET_BIT(BUZZER_PORT,BUZZER_PIN);
 	while(g_counter != 60);
+	GPT_disable(1);
     CLEAR_BIT(BUZZER_PORT,BUZZER_PIN);
-	UART_sendByte(COMPLETE_TASK_COMMAND);
+	USART_sendByte(COMPLETE_TASK_COMMAND);
 }
 
 /*----------------------------------------------------------------------------------------------------
@@ -299,11 +267,11 @@ void buzzer(void){
  [Returns]      :  This function returns void
  ----------------------------------------------------------------------------------------------------*/
 uint8 recieveData(void) {
-	while (UART_recieveByte() != ECU_READY)
+	while (USART_recieveByte() != ECU_READY)
 		;
-	UART_sendByte(ECU_READY);
-	g_data = UART_recieveByte();
-	UART_sendByte(ECU_READY);
+	USART_sendByte(ECU_READY);
+	g_data = USART_recieveByte();
+	USART_sendByte(ECU_READY);
 	return g_data;
 }
 
@@ -314,4 +282,7 @@ uint8 recieveData(void) {
  ----------------------------------------------------------------------------------------------------*/
 void calledBackFunction (void){
 	g_counter++;  /* seconds counter */
+	CLEAR_BIT(MOTOR_PORT,MOTOR_EN);
+	CLEAR_BIT(MOTOR_PORT,MOTOR_IN1);
+	CLEAR_BIT(MOTOR_PORT,MOTOR_IN2);
 }

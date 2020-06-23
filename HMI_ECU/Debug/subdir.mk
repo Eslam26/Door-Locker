@@ -4,22 +4,25 @@
 
 # Add inputs and outputs from these tool invocations to the build variables 
 C_SRCS += \
+../LCD.c \
+../USART.c \
+../USART_PBcfg.c \
 ../keypad.c \
-../lcd.c \
-../main.c \
-../uart.c 
+../main.c 
 
 OBJS += \
+./LCD.o \
+./USART.o \
+./USART_PBcfg.o \
 ./keypad.o \
-./lcd.o \
-./main.o \
-./uart.o 
+./main.o 
 
 C_DEPS += \
+./LCD.d \
+./USART.d \
+./USART_PBcfg.d \
 ./keypad.d \
-./lcd.d \
-./main.d \
-./uart.d 
+./main.d 
 
 
 # Each subdirectory must supply rules for building sources it contributes

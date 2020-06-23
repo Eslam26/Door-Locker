@@ -1,5 +1,5 @@
 /*******************************************************************************************************
- *  [FILE NAME]   :      <lcd.h>                                                                       *
+ *  [FILE NAME]   :      <LCD.h>                                                                       *
  *  [AUTHOR]      :      <Eslam EL-Naggar>                                                             *
  *  [DATE CREATED]:      <Oct 4, 2019>                                                                 *
  *  [Description} :      <header file for LCD Driver>                                                  *
@@ -8,10 +8,10 @@
 #ifndef lcd_H_
 #define lcd_H_
 
+#include "micro_config.h"
 #include "std_types.h"
 #include "common_macros.h"
-#include <avr/io.h>
-#include <util/delay.h>
+
 
 /*******************************************************************************
  *                      Preprocessor Macros                                    *
@@ -25,14 +25,14 @@
 #endif
 
 /* LCD HW Pins */
-#define RS PD5                            /* defines RS pin */
-#define RW PD6                            /* defines RW pin */
-#define E  PD7                            /* defines enable pin */
+#define RS PD0                            /* defines RS pin */
+#define RW PD1                            /* defines RW pin */
+#define E  PD2                            /* defines enable pin */
 #define LCD_CTRL_PORT PORTD               /* defines LCD Control port */
 #define LCD_CTRL_PORT_DIR DDRD            /* defines LCD control port direction */
 
-#define LCD_DATA_PORT PORTB               /* defines LCD data port */
-#define LCD_DATA_PORT_DIR DDRB            /* defines data port direction */
+#define LCD_DATA_PORT PORTC               /* defines LCD data port */
+#define LCD_DATA_PORT_DIR DDRC            /* defines data port direction */
 
 /* LCD Commands */
 #define CLEAR_COMMAND 0x01                /* defines clear command */
